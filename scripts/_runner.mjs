@@ -2,16 +2,16 @@ import { inspect } from 'util';
 import { mkdirSync, readdirSync, readFileSync, writeFileSync } from 'fs';
 
 export const run_against_egghead_files = async (
-  { directory_path, output_path },
+  { input_directory, output_directory },
   nerd,
   additional_instructions = '',
 ) => {
-  const directory = readdirSync(directory_path).filter((str) =>
+  const directory = readdirSync(input_directory).filter((str) =>
     str.endsWith('.md'),
   );
   const outputs = [];
-  const output_directory = `${output_path}/${nerd.name}/${Date.now()}`;
-  mkdirSync(output_directory, { recursive: true });
+  const writedir = `${output_directory}/${nerd.name}/${Date.now()}`;
+  mkdirSync(writedir, { recursive: true });
 
   console.log(
     `  Now running \`${nerd.name}\` against our sample egghead documents.`,
@@ -27,13 +27,13 @@ export const run_against_egghead_files = async (
         invoke_gemini: nerd.with_gemini.invoke,
       },
     );
-    const path = `${output_directory}/${file}`;
+    const path = `${writedir}/${file}`;
     writeFileSync(path, output);
     outputs.push(output);
   }
 
   console.log(`\n\n\`${nerd.name}\` completed against egghead documents.`);
-  console.log(`Check \`${output_directory}\` for the results.`);
+  console.log(`Check \`${writedir}\` for the results.`);
 
   return outputs;
 };

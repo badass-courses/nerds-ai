@@ -40,3 +40,10 @@ export type BaseNerdOptions = {
   as_tool_description: string
   tools?: StructuredTool[]
 }
+
+export type BoundNerd<T> = {
+  name: string,
+  with_openai?: Nerd<T>
+  with_anthropic?: Nerd<T>
+  with_gemini?: Nerd<T>
+}
