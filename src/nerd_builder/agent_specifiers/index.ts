@@ -2,6 +2,7 @@ export { buildSimpleAgentSpecifier, SimpleAgentSpecifier } from "./simple/simple
 export { buildReactAgentSpecifier, ReactAgentSpecifier } from "./tool_calling/react_agent_specifier.js"
 export { buildToolCallingAgentSpecifier, ToolCallingAgentSpecifier } from "./tool_calling/tool_calling_agent_specifier.js"
 
+import { NerdOutput } from "../parsers/index.js"
 import { BaseNerd, Platform } from "../types.js"
 
 export enum AgentType {
@@ -24,4 +25,4 @@ export type AgentSpecifier = {
   allowed_platforms: Platform[],
 }
 
-export type NerdWithAgent = BaseNerd & AgentSpecifier
+export type NerdWithAgent<T extends NerdOutput = string> = BaseNerd<T> & AgentSpecifier

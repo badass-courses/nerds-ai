@@ -1,4 +1,4 @@
-import { StructuredTool } from "langchain/tools"
+import { StructuredTool } from "@langchain/core/tools"
 import { AgentSpecifier, AgentType, ModelType } from "../index.js"
 
 export type ReactAgentSpecifier = AgentSpecifier & {

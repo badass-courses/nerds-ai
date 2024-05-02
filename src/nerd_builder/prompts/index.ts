@@ -1,7 +1,9 @@
-import { NerdWithPrompt, PreConfiguredNerd } from "../types.js";
+import { ChatPromptTemplate } from "langchain/prompts";
+import { NerdOutput } from "../parsers/index.js";
+import { BaseNerd } from "../types.js";
 
-export class PromptBuilder<T> {
-  constructor(public nerd: PreConfiguredNerd<T>) {
+export class PromptBuilder<T extends NerdOutput> {
+  constructor(public nerd: BaseNerd<T>) {
     this.nerd = nerd
   }
 
@@ -34,9 +36,9 @@ ${this.nerd.additional_notes}
   }
 
   specify_agent_instructions(): string {
-    if (this.nerd.agent_specific_instructions) {
+    if (this.nerd.agent_specifier.agent_specific_instructions) {
       return `**Specific Additional Instructions**: 
-${this.nerd.agent_specific_instructions}
+${this.nerd.agent_specifier.agent_specific_instructions}
 `
     } else {
       return ""
@@ -51,7 +53,7 @@ ${this.nerd.agent_specific_instructions}
 
   specify_output_instructions(): string {
     return `**Output Instructions**:
-${this.nerd.prompt_output_string.replaceAll("{", "{{").replaceAll("}", "}}")}`
+{format_instructions}`
   }
 
   compile_prompt(): string {
@@ -65,10 +67,10 @@ ${this.specify_runtime_instructions()}
 ${this.specify_output_instructions()}`.trim()
   }
 
-  decorate(): NerdWithPrompt<T> {
-    return {
-      ...this.nerd,
-      prompt: this.compile_prompt()
-    }
+  build(): ChatPromptTemplate {
+    return ChatPromptTemplate.fromMessages([
+      ["system", this.compile_prompt()],
+      ["human", `Please execute your instructions against the following input:
+{input}`]])
   }
 }
