@@ -6,15 +6,16 @@ import { NerdOutput } from "../parsers/index.js"
 import { createChatModel } from "../models/index.js"
 import { wrapNerdAsTool } from "../tools/index.js"
 import { createRunner } from "../runners/index.js"
-import { OutputParserException } from "langchain/schema/output_parser"
 import { OutputFixingParser } from "langchain/output_parsers"
 import { ChatOpenAI } from "@langchain/openai"
 
 export class NerdPlatformBinder<OutputType extends NerdOutput = string> {
   prompt: ChatPromptTemplate
+  parse: (text: string) => Promise<OutputType>
 
   constructor(public nerd: NerdWithPrompt<OutputType>) {
     this.prompt = this.nerd.prompt
+    this.parse = OutputFixingParser.fromLLM(new ChatOpenAI(), this.nerd.parser).parse
   }
 
   getChatModel(platform: Platform, opts = null): Runnable {
@@ -34,20 +35,7 @@ export class NerdPlatformBinder<OutputType extends NerdOutput = string> {
 
     const invoke = async (input: string, runtime_instructions: string): Promise<OutputType> => {
       const text = await invoke_raw(input, runtime_instructions)
-      try {
-        return await this.nerd.parser.parse(text) as OutputType;
-      } catch (e) {
-        if (e instanceof OutputParserException) {
-          const fixParser = OutputFixingParser.fromLLM(
-            new ChatOpenAI(),
-            this.nerd.parser
-          )
-
-          return await fixParser.parse(text) as OutputType
-        } else {
-          throw e
-        }
-      }
+      return await this.parse(text) as OutputType
     }
 
     const invoke_raw = async (input: string, runtime_instructions: string): Promise<string> => {
