@@ -2,13 +2,13 @@ import { AgentSpecifier } from "./agent_specifiers/index.js";
 import { NerdPlatformBinder } from "./bindings/index.js";
 import { NerdOutput, NerdOutputParser } from "./parsers/index.js";
 import { PromptBuilder } from "./prompts/index.js";
-import { BaseNerd, BaseNerdOptions, Nerd, NerdWithPrompt, Platform } from "./types.js";
+import { BaseNerd, BaseNerdOptions, Nerd, BindableNerd, Platform } from "./types.js";
 
 export class NerdBuilder<T extends NerdOutput> {
-  bindable_nerd: NerdWithPrompt<T>
+  bindable_nerd: BindableNerd<T>
   constructor(public parser: NerdOutputParser<T>, public agent_specifier: AgentSpecifier) { }
 
-  build(options: BaseNerdOptions): NerdWithPrompt<T> {
+  build(options: BaseNerdOptions): BindableNerd<T> {
     const nerd: BaseNerd<T> = {
       name: options.name,
       purpose: options.purpose,
@@ -39,7 +39,7 @@ export class NerdBuilder<T extends NerdOutput> {
 }
 
 export class NerdBinder<T extends NerdOutput = string> {
-  constructor(public nerd: NerdWithPrompt<T>) { }
+  constructor(public nerd: BindableNerd<T>) { }
 
   async bindToModel(platform: Platform): Promise<Nerd<T>> {
     return await new NerdPlatformBinder<T>(this.nerd).bindToModel(platform)

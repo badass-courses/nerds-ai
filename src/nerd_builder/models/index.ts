@@ -2,7 +2,7 @@ import { ChatAnthropic } from "@langchain/anthropic"
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai"
 import { ChatOpenAI, OpenAI } from "@langchain/openai"
 import { ModelType } from "../agent_specifiers/index.js"
-import { Runnable } from "langchain/runnables"
+import { Runnable } from "@langchain/core/runnables"
 
 const default_gpt_opts = {
   model: "gpt-4-turbo",

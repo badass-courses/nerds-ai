@@ -1,4 +1,4 @@
-import { ChatPromptTemplate } from "langchain/prompts";
+import { ChatPromptTemplate } from "@langchain/core/prompts";
 import { NerdOutput } from "../parsers/index.js";
 import { BaseNerd } from "../types.js";
 
@@ -45,12 +45,6 @@ ${this.nerd.agent_specifier.agent_specific_instructions}
     }
   }
 
-  specify_runtime_instructions(): string {
-    return `You may have additional instructions supplied at query time. If so, they will appear here - but it's okay if none are provided.
-{runtime_instructions}
-`
-  }
-
   specify_output_instructions(): string {
     return `**Output Instructions**:
 {format_instructions}`
@@ -63,14 +57,16 @@ ${this.specify_do_list()}
 ${this.specify_do_not_list()}
 ${this.specify_additional_notes()}
 ${this.specify_agent_instructions()}
-${this.specify_runtime_instructions()}
 ${this.specify_output_instructions()}`.trim()
   }
 
   build(): ChatPromptTemplate {
     return ChatPromptTemplate.fromMessages([
       ["system", this.compile_prompt()],
+      ["human", `When invoking your orders against the input in the next message, please add the following constraints to your behavior if anything is specified below:
+{querytime_instructions}`],
       ["human", `Please execute your instructions against the following input:
-{input}`]])
+{input}`],
+      ["placeholder", "{agent_scratchpad}"]])
   }
 }

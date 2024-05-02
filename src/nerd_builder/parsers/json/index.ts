@@ -1,4 +1,4 @@
-import { OutputParserException } from "langchain/schema/output_parser";
+import { OutputParserException } from "@langchain/core/output_parsers";
 import { NerdOutputParser, NerdOutput } from "../index.js";
 
 export class JsonNerdOutputParser<T extends NerdOutput> extends NerdOutputParser<T> {

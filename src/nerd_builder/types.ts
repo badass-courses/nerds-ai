@@ -18,12 +18,12 @@ export type BaseNerd<T extends NerdOutput> = {
   agent_specifier: AgentSpecifier
 }
 
-export type NerdWithPrompt<T extends NerdOutput> = BaseNerd<T> & {
+export type BindableNerd<T extends NerdOutput> = BaseNerd<T> & {
   prompt: ChatPromptTemplate
 }
 
 export type InvocableNerd<T extends NerdOutput> = {
-  nerd: NerdWithPrompt<T>,
+  nerd: BindableNerd<T>,
   invoke: (input: string, runtime_instructions: string) => Promise<T>,
   invoke_raw: (input: string, runtime_instructions: string) => Promise<string>
 }

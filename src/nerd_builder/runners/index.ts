@@ -1,8 +1,9 @@
 import { AgentExecutor, createReactAgent, createToolCallingAgent } from "langchain/agents"
 import { AgentType } from "../agent_specifiers/index.js"
-import { Runnable } from "langchain/runnables"
+import { Runnable } from "@langchain/core/runnables"
+import { BaseChatModel } from "langchain/chat_models/base"
 
-export const createRunner = async (nerd, llm): Promise<Runnable> => {
+export const createRunner = async (nerd, llm: BaseChatModel): Promise<Runnable> => {
   if (nerd.agent_specifier.agent_type === AgentType.SimpleAgent) {
     return llm
   }

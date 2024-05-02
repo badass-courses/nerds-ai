@@ -30,7 +30,7 @@ export const schema = `{
 }`
 
 export type ProposedRevisions = NerdOutput & {
-  thoughts: [],
+  thoughts: string[],
   proposed_edits: {
     line_number: number
     existing_text: string

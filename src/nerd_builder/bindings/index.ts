@@ -1,7 +1,7 @@
-import { Runnable } from "langchain/runnables"
+import { Runnable } from "@langchain/core/runnables"
 import { ChatPromptTemplate } from "@langchain/core/prompts"
 import { StructuredTool } from "@langchain/core/tools"
-import { Nerd, NerdWithPrompt, Platform } from "../types.js"
+import { Nerd, BindableNerd, Platform } from "../types.js"
 import { NerdOutput } from "../parsers/index.js"
 import { createChatModel } from "../models/index.js"
 import { wrapNerdAsTool } from "../tools/index.js"
@@ -11,11 +11,9 @@ import { ChatOpenAI } from "@langchain/openai"
 
 export class NerdPlatformBinder<OutputType extends NerdOutput = string> {
   prompt: ChatPromptTemplate
-  parse: (text: string) => Promise<OutputType>
 
-  constructor(public nerd: NerdWithPrompt<OutputType>) {
+  constructor(public nerd: BindableNerd<OutputType>) {
     this.prompt = this.nerd.prompt
-    this.parse = OutputFixingParser.fromLLM(new ChatOpenAI(), this.nerd.parser).parse
   }
 
   getChatModel(platform: Platform, opts = null): Runnable {
@@ -33,21 +31,32 @@ export class NerdPlatformBinder<OutputType extends NerdOutput = string> {
   bindToModel(platform: Platform, platformOpts = null): Nerd<OutputType> {
     const llm = this.getChatModel(platform, platformOpts)
 
-    const invoke = async (input: string, runtime_instructions: string): Promise<OutputType> => {
-      const text = await invoke_raw(input, runtime_instructions)
-      return await this.parse(text) as OutputType
+    const invoke = async (input: string, querytime_instructions: string = ""): Promise<OutputType> => {
+      const text = await invoke_raw(input, querytime_instructions)
+      const parser = OutputFixingParser.fromLLM(new ChatOpenAI(), this.nerd.parser)
+      return await parser.parse(text) as OutputType
     }
 
-    const invoke_raw = async (input: string, runtime_instructions: string): Promise<string> => {
-      const executor = await this.construct_runner(llm);
+    const invoke_raw = async (input: string, querytime_instructions: string = ""): Promise<string> => {
+      const runner = await this.construct_runner(llm);
       const opts = {}
       if (platform === "GEMINI" && this.nerd.parser.output_format === "json") {
         opts['generationConfig'] = { response_mime_type: "application/json" }
       }
-      const prompt = await this.prompt.invoke({ input, runtime_instructions, format_instructions: this.nerd.parser.getFormatInstructions() })
-      const output = await executor.invoke(prompt, opts)
 
-      return output.content as string
+      const invocation_input = {
+        input,
+        querytime_instructions,
+        format_instructions: this.nerd.parser.getFormatInstructions()
+      }
+
+      try {
+        const result = await runner.invoke(invocation_input, opts)
+        return (result.output || result.content) as string
+      } catch (e) {
+        console.error(e)
+        return "I'm sorry, I couldn't generate a response."
+      }
     }
 
     const nerd = this.nerd
