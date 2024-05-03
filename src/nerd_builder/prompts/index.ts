@@ -1,7 +1,9 @@
-import { NerdWithPrompt, PreConfiguredNerd } from "../types.js";
+import { ChatPromptTemplate } from "@langchain/core/prompts";
+import { NerdOutput } from "../parsers/index.js";
+import { BaseNerd } from "../types.js";
 
-export class PromptBuilder<T> {
-  constructor(public nerd: PreConfiguredNerd<T>) {
+export class PromptBuilder<T extends NerdOutput> {
+  constructor(public nerd: BaseNerd<T>) {
     this.nerd = nerd
   }
 
@@ -34,24 +36,18 @@ ${this.nerd.additional_notes}
   }
 
   specify_agent_instructions(): string {
-    if (this.nerd.agent_specific_instructions) {
+    if (this.nerd.agent_specifier.agent_specific_instructions) {
       return `**Specific Additional Instructions**: 
-${this.nerd.agent_specific_instructions}
+${this.nerd.agent_specifier.agent_specific_instructions}
 `
     } else {
       return ""
     }
   }
 
-  specify_runtime_instructions(): string {
-    return `You may have additional instructions supplied at query time. If so, they will appear here - but it's okay if none are provided.
-{runtime_instructions}
-`
-  }
-
   specify_output_instructions(): string {
     return `**Output Instructions**:
-${this.nerd.prompt_output_string.replaceAll("{", "{{").replaceAll("}", "}}")}`
+{format_instructions}`
   }
 
   compile_prompt(): string {
@@ -61,14 +57,16 @@ ${this.specify_do_list()}
 ${this.specify_do_not_list()}
 ${this.specify_additional_notes()}
 ${this.specify_agent_instructions()}
-${this.specify_runtime_instructions()}
 ${this.specify_output_instructions()}`.trim()
   }
 
-  decorate(): NerdWithPrompt<T> {
-    return {
-      ...this.nerd,
-      prompt: this.compile_prompt()
-    }
+  build(): ChatPromptTemplate {
+    return ChatPromptTemplate.fromMessages([
+      ["system", this.compile_prompt()],
+      ["human", `When invoking your orders against the input in the next message, please add the following constraints to your behavior if anything is specified below:
+{querytime_instructions}`],
+      ["human", `Please execute your instructions against the following input:
+{input}`],
+      ["placeholder", "{agent_scratchpad}"]])
   }
 }

@@ -1,39 +1,45 @@
 import { AgentSpecifier } from "./agent_specifiers/index.js";
 import { NerdPlatformBinder } from "./bindings/index.js";
-import { OutputSpecifier } from "./output_specifiers/index.js";
+import { NerdOutput, NerdOutputParser } from "./parsers/index.js";
 import { PromptBuilder } from "./prompts/index.js";
-import { BaseNerd, BaseNerdOptions, Nerd, NerdWithPrompt, Platform, PreConfiguredNerd } from "./types.js";
+import { BaseNerd, BaseNerdOptions, Nerd, BindableNerd, Platform } from "./types.js";
 
-export class NerdBuilder<T> {
-  constructor(public output_specifier: OutputSpecifier<T>, public agent_specifier: AgentSpecifier) { }
+export class NerdBuilder<T extends NerdOutput> {
+  bindable_nerd: BindableNerd<T>
+  constructor(public parser: NerdOutputParser<T>, public agent_specifier: AgentSpecifier) { }
 
-  build(options: BaseNerdOptions): NerdWithPrompt<T> {
-    const nerd: BaseNerd = {
+  build(options: BaseNerdOptions): BindableNerd<T> {
+    const nerd: BaseNerd<T> = {
       name: options.name,
       purpose: options.purpose,
       do_list: options.do_list,
       do_not_list: options.do_not_list,
       as_tool_description: options.as_tool_description,
       additional_notes: options.additional_notes,
-      tools: options.tools
+      tools: options.tools,
+      parser: this.parser,
+      agent_specifier: this.agent_specifier
     }
 
-    const preconfiguredNerd: PreConfiguredNerd<T> = {
+    const prompt = new PromptBuilder(nerd).build()
+    this.bindable_nerd = {
       ...nerd,
-      ...this.output_specifier,
-      ...this.agent_specifier
+      prompt
     }
 
-    return new PromptBuilder(preconfiguredNerd).decorate()
+    return this.bindable_nerd
   }
 
-  async bindNerd(nerd: NerdWithPrompt<T>, platform: Platform): Promise<Nerd<T>> {
-    return await new NerdPlatformBinder<T>(nerd).bindToModel(platform)
+  async bindNerd(platform: Platform): Promise<Nerd<T>> {
+    if (!this.bindable_nerd) {
+      throw new Error("Nerd must be built before binding. Invoke .build(nerd_opts) first.")
+    }
+    return await new NerdPlatformBinder<T>(this.bindable_nerd).bindToModel(platform)
   }
 }
 
-export class NerdBinder<T> {
-  constructor(public nerd: NerdWithPrompt<T>) { }
+export class NerdBinder<T extends NerdOutput = string> {
+  constructor(public nerd: BindableNerd<T>) { }
 
   async bindToModel(platform: Platform): Promise<Nerd<T>> {
     return await new NerdPlatformBinder<T>(this.nerd).bindToModel(platform)

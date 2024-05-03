@@ -1,16 +1,16 @@
 import { NerdBinder, NerdBuilder } from "../../main.js"
 import { buildSimpleAgentSpecifier, buildToolCallingAgentSpecifier } from "../../nerd_builder/agent_specifiers/index.js"
-import { revision_parser, ProposedRevisions } from "../../nerd_builder/parsers/json/revision.js"
+import { findings_parser, Findings } from "../../nerd_builder/parsers/json/findings.js"
 import { BaseNerdOptions, BoundNerd } from "../../nerd_builder/types.js"
 
-type RevisedNerdBuilder = (opts: BaseNerdOptions) => Promise<BoundNerd<ProposedRevisions>>
-export const buildRevisionNerd: RevisedNerdBuilder = async (nerd_opts) => {
+type FindingsNerdBuilder = (opts: BaseNerdOptions) => Promise<BoundNerd<Findings>>
+export const buildFindingsNerd: FindingsNerdBuilder = async (nerd_opts) => {
   const has_tools = nerd_opts.tools && nerd_opts.tools.length > 0
 
   const agent_specifier = has_tools ? buildToolCallingAgentSpecifier(nerd_opts.tools) : buildSimpleAgentSpecifier()
-  const nerdBuilder = new NerdBuilder<ProposedRevisions>(revision_parser, agent_specifier)
+  const nerdBuilder = new NerdBuilder<Findings>(findings_parser, agent_specifier)
   const nerd = nerdBuilder.build(nerd_opts)
-  const nerdBinder = new NerdBinder<ProposedRevisions>(nerd)
+  const nerdBinder = new NerdBinder<Findings>(nerd)
 
   const output = {
     name: nerd_opts.name,

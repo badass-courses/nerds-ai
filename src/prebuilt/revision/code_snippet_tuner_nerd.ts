@@ -1,4 +1,5 @@
 import { buildRevisionNerd } from "./index.js"
+export { ProposedRevisions } from "../../nerd_builder/parsers/json/revision.js"
 
 const nerd_opts = {
   name: "CodeSnippetTunerNerd",
