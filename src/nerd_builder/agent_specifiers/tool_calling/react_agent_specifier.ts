@@ -1,9 +1,9 @@
-import { StructuredTool } from "@langchain/core/tools"
+import { StructuredToolInterface } from "@langchain/core/tools"
 import { AgentSpecifier, AgentType, ModelType } from "../index.js"
 
 export type ReactAgentSpecifier = AgentSpecifier & {
   agent_type: AgentType.ReactAgent,
-  tools: StructuredTool[],
+  tools: StructuredToolInterface[],
   preferred_model_type: ModelType.LLM
 }
 
@@ -26,7 +26,7 @@ Please feel free to use the agent scratchpad to keep track of your thoughts and 
 `
 
 export const buildReactAgentSpecifier = (
-  tools: StructuredTool[],
+  tools: StructuredToolInterface[],
 ): ReactAgentSpecifier => {
   return {
     agent_type: AgentType.ReactAgent,

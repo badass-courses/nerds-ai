@@ -45,6 +45,8 @@
     "@langchain/community": "^0.0.53",
     "@langchain/google-genai": "^0.0.12",
     "@langchain/openai": "^0.0.28",
+    "@langchain/pinecone": "^0.0.4",
+    "@pinecone-database/pinecone": "^2.2.0",
     "dotenv": "^16.4.5",
     "langchain": "^0.1.36",
     "tslib": "~2.6",

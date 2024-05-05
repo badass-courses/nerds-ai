@@ -1,14 +1,14 @@
-import { StructuredTool } from "@langchain/core/tools"
+import { StructuredToolInterface } from "@langchain/core/tools"
 import { AgentSpecifier, AgentType, ModelType } from "../index.js"
 
 export type ToolCallingAgentSpecifier = AgentSpecifier & {
   agent_type: AgentType.ToolCallingAgent,
-  tools: StructuredTool[],
+  tools: StructuredToolInterface[],
   preferred_model_type: ModelType.CHAT
 }
 
 export const buildToolCallingAgentSpecifier = (
-  tools: StructuredTool[]
+  tools: StructuredToolInterface[]
 ): ToolCallingAgentSpecifier => {
 
   console.log("WE HAVE A TOOL CALLING AGENT!")

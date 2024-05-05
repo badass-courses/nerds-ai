@@ -1,6 +1,6 @@
 import { Runnable } from "@langchain/core/runnables"
 import { ChatPromptTemplate } from "@langchain/core/prompts"
-import { StructuredTool } from "@langchain/core/tools"
+import { StructuredToolInterface } from "@langchain/core/tools"
 import { Nerd, BindableNerd, Platform } from "../types.js"
 import { NerdOutput } from "../parsers/index.js"
 import { createChatModel } from "../models/index.js"
@@ -20,7 +20,7 @@ export class NerdPlatformBinder<OutputType extends NerdOutput = string> {
     return createChatModel(this.nerd, platform, opts)
   }
 
-  as_tool(invoke_raw): StructuredTool {
+  as_tool(invoke_raw): StructuredToolInterface {
     return wrapNerdAsTool(this.nerd, invoke_raw)
   }
 

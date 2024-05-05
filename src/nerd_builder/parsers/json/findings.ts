@@ -12,7 +12,6 @@ export const schema = `{
 }`
 
 export type Findings = NerdOutput & {
-  thoughts: string[],
   findings: string[]
 }
 
