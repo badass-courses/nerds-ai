@@ -37,7 +37,8 @@
     "demo:personality": "node scripts/egghead/run_personality_nerd.mjs",
     "demo:code_snippets": "node scripts/egghead/run_code_snippet_tuner_nerd.mjs",
     "demo:concepts": "node scripts/egghead/extract_concepts_with_pinecone.mjs",
-    "demo:wiki": "node scripts/toys/wiki.mjs"
+    "demo:wiki": "node scripts/toys/wiki.mjs",
+    "demo:test": "node scripts/test_flow.mjs"
   },
   "author": "Mykola Bilokonsky <mbilokonsky@users.noreply.github.com>",
   "license": "Apache-2.0",

@@ -4,8 +4,7 @@ import { mkdirSync, readdirSync, readFileSync, writeFileSync } from 'fs';
 export const run_against_egghead_files = async (
   { input_directory, output_directory },
   nerd,
-  additional_instructions = '',
-  debug = false
+  additional_instructions = ''
 ) => {
   const directory = readdirSync(input_directory).filter((str) =>
     str.endsWith('.md'),
@@ -23,9 +22,9 @@ export const run_against_egghead_files = async (
       nerd.name,
       additional_instructions,
       {
-        invoke_gpt: debug ? nerd.with_openai?.invoke : nerd.with_openai?.debug,
-        invoke_anthropic: debug ? nerd.with_anthropic?.invoke : nerd.with_anthropic?.debug,
-        invoke_gemini: debug ? nerd.with_gemini?.invoke : nerd.with_gemini?.debug,
+        invoke_gpt: nerd.with_openai?.invoke,
+        invoke_anthropic: nerd.with_anthropic?.invoke,
+        invoke_gemini: nerd.with_gemini?.invoke,
       },
     );
     const path = `${writedir}/${file}`;
@@ -55,7 +54,10 @@ const process_file_with_nerds = async (
     gpt_output = await invoke_gpt(text, additional_instructions);
     formatted_gpt_output = inspect(gpt_output, false, 5);
   } catch (e) {
-    formatted_gpt_output = `[Error running GPT: ${e}]`;
+    formatted_gpt_output = `[Error running GPT: ${e}]
+${e.stack}
+`;
+
   }
   console.log(formatted_gpt_output);
   console.log('\n\n');
@@ -67,7 +69,8 @@ const process_file_with_nerds = async (
     anthropic_output = await invoke_anthropic(text, additional_instructions);
     formatted_anthropic_output = inspect(anthropic_output, false, 5);
   } catch (e) {
-    formatted_anthropic_output = `[Error running Anthropic: ${e}]`;
+    formatted_anthropic_output = `[Error running Anthropic: ${e}]
+  ${e.stack}`;
   }
   console.log(formatted_anthropic_output);
   console.log('\n\n');
@@ -79,7 +82,8 @@ const process_file_with_nerds = async (
     gemini_output = await invoke_gemini(text, additional_instructions);
     formatted_gemini_output = inspect(gemini_output, false, 5);
   } catch (e) {
-    formatted_gemini_output = `[Error running Gemini: ${e}]`;
+    formatted_gemini_output = `[Error running Gemini: ${e}]
+  ${e.stack}`;
   }
   console.log(formatted_gemini_output);
   console.log('\n\n');

@@ -8,7 +8,7 @@ const main = async () => {
   await run_against_egghead_files(
     { input_directory: './sources', output_directory: './demos' },
     PersonalityNerd,
-    personality,
+    personality
   );
 };
 
