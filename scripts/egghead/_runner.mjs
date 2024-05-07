@@ -5,6 +5,7 @@ export const run_against_egghead_files = async (
   { input_directory, output_directory },
   nerd,
   additional_instructions = '',
+  debug = false
 ) => {
   const directory = readdirSync(input_directory).filter((str) =>
     str.endsWith('.md'),
@@ -22,9 +23,9 @@ export const run_against_egghead_files = async (
       nerd.name,
       additional_instructions,
       {
-        invoke_gpt: nerd.with_openai.invoke,
-        invoke_anthropic: nerd.with_anthropic.invoke,
-        invoke_gemini: nerd.with_gemini.invoke,
+        invoke_gpt: debug ? nerd.with_openai?.invoke : nerd.with_openai?.debug,
+        invoke_anthropic: debug ? nerd.with_anthropic?.invoke : nerd.with_anthropic?.debug,
+        invoke_gemini: debug ? nerd.with_gemini?.invoke : nerd.with_gemini?.debug,
       },
     );
     const path = `${writedir}/${file}`;

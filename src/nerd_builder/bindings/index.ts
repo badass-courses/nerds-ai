@@ -1,13 +1,14 @@
 import { Runnable } from "@langchain/core/runnables"
 import { ChatPromptTemplate } from "@langchain/core/prompts"
 import { StructuredToolInterface } from "@langchain/core/tools"
-import { Nerd, BindableNerd, Platform } from "../types.js"
+import { Nerd, BindableNerd, Platform, DebugNerdOutput } from "../types.js"
 import { NerdOutput } from "../parsers/index.js"
 import { createChatModel } from "../models/index.js"
-import { wrapNerdAsTool } from "../tools/index.js"
+import { wrapNerdAsTool } from "../../tools/index.js"
 import { createRunner } from "../runners/index.js"
 import { OutputFixingParser } from "langchain/output_parsers"
 import { ChatOpenAI } from "@langchain/openai"
+import { BaseMessageChunk, ChainValues } from "langchain/schema"
 
 export class NerdPlatformBinder<OutputType extends NerdOutput = string> {
   prompt: ChatPromptTemplate
@@ -24,8 +25,8 @@ export class NerdPlatformBinder<OutputType extends NerdOutput = string> {
     return wrapNerdAsTool(this.nerd, invoke_raw)
   }
 
-  async construct_runner(llm): Promise<Runnable> {
-    return await createRunner(this.nerd, llm)
+  async construct_runner(llm, includeIntermediarySteps: boolean = false): Promise<Runnable> {
+    return await createRunner(this.nerd, llm, includeIntermediarySteps)
   }
 
   bindToModel(platform: Platform, platformOpts = null): Nerd<OutputType> {
@@ -38,7 +39,20 @@ export class NerdPlatformBinder<OutputType extends NerdOutput = string> {
     }
 
     const invoke_raw = async (input: string, querytime_instructions: string = ""): Promise<string> => {
-      const runner = await this.construct_runner(llm);
+      const runner = await this.construct_runner(llm)
+
+      if (nerd.agent_specifier.agent_type === "ToolCallingAgent" || nerd.agent_specifier.agent_type === "ReactAgent") {
+        const result: ChainValues = await _invoke(input, querytime_instructions, runner) as ChainValues
+        return result.output as string
+      } else {
+        const result: BaseMessageChunk = await _invoke(input, querytime_instructions, runner) as BaseMessageChunk
+
+        return result.content as string
+      }
+    }
+
+    type RawInvocationOutput = ChainValues | BaseMessageChunk
+    const _invoke = async (input: string, querytime_instructions: string = "", runner: Runnable): Promise<RawInvocationOutput> => {
       const opts = {}
       if (platform === "GEMINI" && this.nerd.parser.output_format === "json") {
         opts['generationConfig'] = { response_mime_type: "application/json" }
@@ -50,12 +64,20 @@ export class NerdPlatformBinder<OutputType extends NerdOutput = string> {
         format_instructions: this.nerd.parser.getFormatInstructions()
       }
 
-      try {
-        const result = await runner.invoke(invocation_input, opts)
-        return (result.output || result.content) as string
-      } catch (e) {
-        console.error(e)
-        return "I'm sorry, I couldn't generate a response."
+      return await runner.invoke(invocation_input, opts)
+    }
+
+    const debug = async (input: string, querytime_instructions: string = ""): Promise<DebugNerdOutput<OutputType>> => {
+      if (this.nerd.agent_specifier.agent_type === "SimpleAgent") {
+        throw new Error("Cannot use debug output with SimpleAgent")
+      }
+
+      const runner = await this.construct_runner(llm, true)
+      const result = await _invoke(input, querytime_instructions, runner) as ChainValues
+
+      return {
+        output: result.output as OutputType,
+        intermediate_steps: result.intermediate_steps
       }
     }
 
@@ -66,7 +88,8 @@ export class NerdPlatformBinder<OutputType extends NerdOutput = string> {
       nerd,
       tool,
       invoke,
-      invoke_raw
+      invoke_raw,
+      debug
     }
   }
 }

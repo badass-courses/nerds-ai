@@ -1,16 +1,9 @@
 import { buildFindingsNerd } from "./index.js"
 import { Pinecone } from "@pinecone-database/pinecone"
-import { OpenAI, OpenAIEmbeddings } from "@langchain/openai";
-import { PineconeStore } from "@langchain/pinecone";
 import { BoundNerd } from "../../nerd_builder/types.js";
 import { Findings } from "./wikipedia_research_nerd.js";
-import { VectorStoreInfo, VectorStoreToolkit } from "langchain/agents";
+import { buildConceptDisambiguationTools } from "../../tools/pinecone_tools.js"
 export { Findings } from "../../nerd_builder/parsers/json/findings.js"
-
-
-
-
-
 
 type PineconeConfig = {
   api_key?: string,
@@ -23,7 +16,7 @@ type ConceptNerdConfig = {
 
 type ConceptNerdBuilder = (pineconeConfig: PineconeConfig, nerdConfig: ConceptNerdConfig) => Promise<BoundNerd<Findings>>
 
-export const buildPineconeNerd: ConceptNerdBuilder = async (pineconeConfig: PineconeConfig, nerdConfig: ConceptNerdConfig) => {
+export const buildPineconeBackedConceptNerd: ConceptNerdBuilder = async (pineconeConfig: PineconeConfig, nerdConfig: ConceptNerdConfig) => {
 
   const pinecone_api_key = pineconeConfig.api_key || process.env.PINECONE_API_KEY
   const pinecone_index_name = pineconeConfig.index_name || process.env.PINECONE_INDEX_NAME
@@ -38,39 +31,25 @@ export const buildPineconeNerd: ConceptNerdBuilder = async (pineconeConfig: Pine
 
   const pinecone = new Pinecone({
     apiKey: pinecone_api_key,
-
   });
 
-  const pinecone_index = pinecone.index(pinecone_index_name);
-
-  const vector_store = await PineconeStore.fromExistingIndex(
-    new OpenAIEmbeddings(),
-    { pineconeIndex: pinecone_index }
-  )
-
-  const vectorStoreInfo: VectorStoreInfo = {
-    name: "concepts",
-    description: "A store of concept terms that have been used before. When extracting concepts from a text, for each extracted concept see if any similar concepts are in this store and use those if they capture what your target concept is trying to capture. If so, use the existing one; if not, add the one you've got.",
-    vectorStore: vector_store
-  }
-
-  const toolkit = new VectorStoreToolkit(vectorStoreInfo, new OpenAI({ temperature: 0 }))
+  const toolkit = buildConceptDisambiguationTools(pinecone, pinecone_index_name)
 
   const nerd_opts = {
     name: "VectorBackedConceptStoreNerd",
     purpose: `Your task is to extract 'concepts' from a given text in the domain <${nerdConfig.domain}>. A concept is a term that captures a specific idea or object. This is going to be used to create a searchable index and tooling across a number of technical documents. Our goal is to extract salient concepts from each text, and using the vector store to disambiguate references to different concepts such that they resolve into canonical concept names.`,
     do_list: [
-      `extract a list of concepts from a given text that are relevant to the domain <${nerdConfig.domain}>`,
-      "use the vector store to resolve references to concepts",
-      "use the vector store to find similar concepts to the ones you've extracted",
-      "using both the concept list you've extracted and the canonical list of concept names in the vector store, return a list of concepts that capture the document's primary and ancillary themes but be sure to use existing canonical terms if they apply.",
-      "add new concepts to the vector store if they are not already present",
-      "use your chain_of_thought log to track your initial concept list, how you've updated that concept list against the canonical concept list, and which concepts you've added to the store and which you've resolved to existing concepts."
+      `1. extract a list of concepts from a given text that are relevant to the domain <${nerdConfig.domain}>`,
+      "2. for each extracted concept, use the `existingConceptFinder` tool to see if there are any existing concepts that could be reused instead. Record your findings in your chain of thought.",
+      "3. for each extracted concept, either replace it with an existing concept (if this can be done while preserving overall meaning) or keep track of it as a NEW CONCEPT to write to the store. Record your decision in your chain of thought.",
+      "4. using the `upsert_concepts` tool, write any new concepts to the store. Record the number of new concepts written in your chain of thought.",
+      "5. finally, return your final list of concepts."
     ],
     do_not_list: [
-      "return any concepts that are not either already in the store or which you have not newly added to the store."
+      "return any concepts that are not either already in the store or which you have not newly added to the store.",
+      "include 'duplicates', in other words if you find a match in the store then you should REPLACE the extracted concept with the store concept."
     ],
-    as_tool_description: "A tool that extracts canonical and tracked concept names from a given text.",
+    as_tool_description: `A tool that extracts tracked, canonical concept names from a given text in the <${nerdConfig.domain}> domain and tracks them in a vector store.`,
     tools: toolkit.getTools()
   }
 

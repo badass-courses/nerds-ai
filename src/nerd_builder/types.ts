@@ -2,9 +2,14 @@ import { StructuredToolInterface } from "@langchain/core/tools"
 import { AgentSpecifier } from "./agent_specifiers/index.js"
 import { NerdOutput, NerdOutputParser } from "./parsers/index.js"
 import { ChatPromptTemplate } from "@langchain/core/prompts"
+import { AgentStep } from "@langchain/core/agents"
 
 export type Platform = "OPEN_AI" | "ANTHROPIC" | "GEMINI"
 
+export type DebugNerdOutput<T extends NerdOutput> = {
+  output: T,
+  intermediate_steps: AgentStep[]
+}
 
 export type BaseNerd<T extends NerdOutput> = {
   name: string
@@ -25,7 +30,8 @@ export type BindableNerd<T extends NerdOutput> = BaseNerd<T> & {
 export type InvocableNerd<T extends NerdOutput> = {
   nerd: BindableNerd<T>,
   invoke: (input: string, runtime_instructions: string) => Promise<T>,
-  invoke_raw: (input: string, runtime_instructions: string) => Promise<string>
+  invoke_raw: (input: string, runtime_instructions: string) => Promise<string>,
+  debug: (input: string, runtime_instructions: string) => Promise<DebugNerdOutput<T>>
 }
 
 export type Nerd<T extends NerdOutput = string> = InvocableNerd<T> & {
