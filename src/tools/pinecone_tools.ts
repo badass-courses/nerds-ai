@@ -1,14 +1,20 @@
 import { ToolInterface } from "@langchain/core/tools";
 import { OpenAIEmbeddings } from "@langchain/openai";
 import { Pinecone, PineconeRecord, QueryResponse, RecordMetadata } from "@pinecone-database/pinecone"
-import { Toolkit } from "langchain/agents";
-import { DynamicStructuredTool } from "langchain/tools";
+import { BaseToolkit, DynamicStructuredTool } from "@langchain/core/tools";
 import { z } from "zod";
 
 const embeddings = new OpenAIEmbeddings();
 
+export class ConceptToolkit extends BaseToolkit {
+  tools: ToolInterface[]
+  constructor(public pinecone: Pinecone, public index_name: string = "concepts") {
+    super()
+    this.tools = buildConceptDisambiguationTools(pinecone, index_name)
+  }
+}
 
-export const buildConceptDisambiguationTools = (pinecone: Pinecone, index_name: string = "concepts"): Toolkit => {
+export const buildConceptDisambiguationTools = (pinecone: Pinecone, index_name: string = "concepts"): ToolInterface[] => {
   const index = pinecone.index(index_name)
   const getSimilarConcepts = async (concepts: string[]): Promise<Map<string, string[]>> => {
     const embedded_concepts = await embeddings.embedDocuments(concepts)
@@ -46,7 +52,7 @@ export const buildConceptDisambiguationTools = (pinecone: Pinecone, index_name: 
     return records.length
   }
 
-  const tools: ToolInterface[] = [
+  return [
     new DynamicStructuredTool({
       name: "existingConceptFinder",
       description: "Given some list of concepts, returns a map where each concept passed in is associated with a list of zero or more existing concepts that may be used instead.",
@@ -70,9 +76,4 @@ export const buildConceptDisambiguationTools = (pinecone: Pinecone, index_name: 
       })
     })
   ]
-
-  return {
-    tools,
-    getTools: () => tools
-  }
 }

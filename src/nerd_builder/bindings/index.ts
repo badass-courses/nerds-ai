@@ -8,7 +8,8 @@ import { wrapNerdAsTool } from "../../tools/index.js"
 import { createRunner } from "../runners/index.js"
 import { OutputFixingParser } from "langchain/output_parsers"
 import { ChatOpenAI } from "@langchain/openai"
-import { BaseMessageChunk, ChainValues } from "langchain/schema"
+import { BaseMessageChunk } from "@langchain/core/messages"
+import { ChainValues } from "@langchain/core/utils/types"
 
 export class NerdPlatformBinder<OutputType extends NerdOutput = string> {
   prompt: ChatPromptTemplate
@@ -75,8 +76,11 @@ export class NerdPlatformBinder<OutputType extends NerdOutput = string> {
       const runner = await this.construct_runner(llm, true)
       const result = await _invoke(input, querytime_instructions, runner) as ChainValues
 
+      const parser = OutputFixingParser.fromLLM(new ChatOpenAI(), this.nerd.parser)
+      const parsed_output: OutputType = await parser.parse(result.output) as OutputType
+
       return {
-        output: result.output as OutputType,
+        output: parsed_output,
         intermediate_steps: result.intermediate_steps
       }
     }

@@ -12,7 +12,7 @@ export const createRunner = async (nerd, llm: BaseChatModel, debug_output: boole
     const tools = nerd.tools
     const prompt = nerd.prompt
     const agent = await createToolCallingAgent({ tools, prompt, llm })
-    const executor = new AgentExecutor({ agent, tools, returnIntermediateSteps: debug_output, })
+    const executor = new AgentExecutor({ agent, tools, returnIntermediateSteps: debug_output })
     return executor
   }
 
