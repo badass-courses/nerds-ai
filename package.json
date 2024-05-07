@@ -38,7 +38,13 @@
     "demo:code_snippets": "node scripts/egghead/run_code_snippet_tuner_nerd.mjs",
     "demo:concepts": "node scripts/egghead/extract_concepts_with_pinecone.mjs",
     "demo:wiki": "node scripts/toys/wiki.mjs",
-    "demo:test": "node scripts/test_flow.mjs"
+    "demo:test": "node scripts/test_flow.mjs",
+    "example:accessible": "node scripts/simple/accessible_language_nerd.mjs",
+    "example:code_snippets": "node scripts/simple/code_snippet_tuner_nerd.mjs",
+    "example:concepts": "node scripts/simple/concept_extraction_nerd.mjs",
+    "example:personality": "node scripts/simple/personality_nerd.mjs",
+    "example:typo": "node scripts/simple/typo_nerd.mjs",
+    "example:wiki": "node scripts/simple/wikipedia_research_nerd.mjs"
   },
   "author": "Mykola Bilokonsky <mbilokonsky@users.noreply.github.com>",
   "license": "Apache-2.0",

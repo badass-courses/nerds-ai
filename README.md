@@ -18,8 +18,8 @@ PINECONE_INDEX_NAME="REPLACE_ME"
 ## Creating Nerds
 A nerd can be defined independently of any LLMs, and then bound to different LLMs for execution. We first create a nerd by implementing the `BaseNerd` type, and then we `bind` that nerd to one or more LLMs for execution.
 
-### Nerd Config
-A nerd config object defines what the nerd dooes and how. This is mostly used to implement the system message, and contains a few parameterizable things:
+### BaseNerd<T>
+At its core a nerd is an object that defines what the LLM does and how. This is mostly used to implement the system message, and contains a few parameterizable things. The `parser` and `agent_specifier` come into play when binding the nerd to an LLM for actual execution, see below.
 
 ```typescript
 export type BaseNerd<T extends NerdOutput> = {
@@ -53,7 +53,9 @@ export type BaseNerd<T extends NerdOutput> = {
 ```
 
 ### One Nerd To Bring Them All and In The Darkness Bind Them
-Once you have a BaseNerd you can bind it to an LLM. Currently out of the box this library supports OpenAI, Anthropic and Google LLMs. The `NerdPlatformBinder` class exposes a `.bindToPlatform(platform, platform_opts?)` method which returns the invocable nerd object that's ready to use. It returns an object that looks like this:
+Once you have a BaseNerd you can bind it to an LLM. Currently out of the box this library supports OpenAI, Anthropic and Google LLMs. The `NerdPlatformBinder` class exposes a `.bindToPlatform(platform, platform_opts?)` method which returns the invocable nerd object that's ready to use.
+
+Depending on the output parser specified and which agent_specifier you're using the binding operation will make a bunch of configuration choices and serve up an invocable object that looks like this:
 
 ```typescript
 type BoundNerd<T extends NerdOutput> = {
@@ -75,42 +77,226 @@ type BoundNerd<T extends NerdOutput> = {
 ### Nerd Output
 Fundamentally there are two kinds of nerds - those that return structured JSON objects and those that return markdown strings. In either case, a nerd's output will generally specify a "chain of thought" as well as its actual final output. There are various kinds of JSON Nerd Outputs out there - the prebuilt nerds have a simple `Findings` output type which simply returns an array of strings, and a more complex `ProposedRevisions` output type which returns some structured data whose purpose is to allow a user to build an interface where they can accept or reject proposed revisions to a text.
 
-## Example Nerd Outputs
-I've got a bunch of scripts to run against proprietary texts that are .gitignored from this repo. We can set those up, but here's a very simple set of outputs -- these come from invoking `npm run demo:test`, which is a passthrough to [test_flow.mjs](./scripts/test_flow.mjs). This script is a simple test script that runs a few nerds against a few inputs and logs the outputs.
+## Prebuilt Nerds
+This is a running list of prebuilt nerds including sample outputs when run against a document from the egghead source material. The input document is not checked into the repo because those texts are proprietary, I'm happy to share them with other egghead folks if you want to run them yourselves or you can run them against your own stuff.
 
-The two demos included here are:
-  1. ConceptNerd - this nerd extracts concepts from a text and checks them against a store of existing concepts. This is actually reading from and writing to a Pinecone vector database. We can tune the way it selects and defines the concepts it extracts.
-  2. PersonalityNerd - this nerd infuses a text with the personality of a Klingon warrior. It does this by making a series of proposed edits to the text, which are designed to make the text more forceful and direct. This is a simple example of a nerd that makes a series of proposed edits to a text.
+There are currently two different kinds of nerds - those that return a markdown string and those that return a structured JSON object. The markdown string nerds are generally used for simple tasks like summarization, while the structured JSON nerds are used for more complex tasks like proposing revisions to a text. The prebuilt nerds are currently all built to return JSON.
 
-If you have a folder of source texts you can also run the other scripts in the `scripts` folder, which are designed to read files from a source directory and then write those files with nerd outputs appended to the bottom to a target directory. I'm not including them here for reasons of proprietary data, but happy to show you how to get this up and running.
+There are currently two JSON output types defined. Both return an object with a `chain_of_thought` string array as well as a typed payload.
+* `Findings` - A Findings nerd is really straightforward. It simply returns an array of strings that represent the findings of the nerd. This is useful to prepare concise input to other nerds, for instance.
+* `Revisions` - A Revisions nerd is a bit more ambitious. Given some text input, it returns a list of proposed revisions to that text. The idea is that a user can then accept/reject those revisions via some user interface, seamlessly mutating the text.
 
-```
-RAW string output from concept nerd:
-{
-  "chain_of_thought": [
-    "First, I need to extract relevant concepts from the provided text. The text discusses TypeScript features, specifically focusing on 'as const' and its use in type inference and object immutability.",
-    "Identified concepts include: 'as const', 'literal type inference', 'ButtonAttributes', 'modifyButton function', 'read-only properties', 'type property', 'modifyButtons function', 'buttonsToChange array'.",
-    "Next, I will use the existingConceptFinder tool to check if any of these concepts already exist in the store or if there are similar concepts that could be used instead.",
-    "After receiving the results from the existingConceptFinder, I will decide whether to replace any of the extracted concepts with existing ones or add new concepts to the store.",
-    "Finally, I will add any new concepts that are not already in the store using the addConceptsToStore tool and return the final list of concepts."
-  ],
-  "findings": [
-    "as const",
-    "literal type inference",
-    "ButtonAttributes",
-    "modifyButton function",
-    "read-only properties",
-    "type property",
-    "modifyButtons function",
-    "buttonsToChange array"
-  ]
-}
----
-Parsed JSON output from concept nerd:
+I've got a number of different kinds of prebuilt nerds that implement these two basic types, and as you can see it's hopefully pretty straightforward to define new ones. The examples you'll find below are all defined in [./scripts/simple](./scripts/simple/) and you can run them yourself if you have the appropriate environment variables defined and can supply text input. Note that we are generating inputs only against OpenAI, but all tools except wiki and content extraction are available for Anthropic and Google as well. The tool-using nerds (wiki and context) require a tool-using LLM, and currently Gemini doesn't support that so they won't work with Gemini, but work fine with Anthropic as well as OpenAI.
+
+### Prebuilt Revision Nerd: AccessibleLanguageNerd
+This nerd takes a text input and returns a list of proposed revisions to make the text more accessible. This is a good example of a nerd that returns a `Revisions` object. The [definition](./src/prebuilt/revision/accessible_language_nerd.ts) is straightforward and easily tunable. The output you'll receive looks like this:
+
+```typescript
 {
   chain_of_thought: [
-    "First, I need to extract relevant concepts from the provided text. The text discusses TypeScript features, specifically focusing on 'as const' and its use in type inference for object properties.",
-    "Identified concepts include: 'as const', 'literal type inference', 'ButtonAttributes', 'modifyButton function', 'read-only properties', 'type property', 'modifyButtons function', 'buttonsToChange array'.",
+    "First, I'll review the text for clarity and readability, focusing on simplifying complex sentences and ensuring the technical content remains precise.",
+    "The title and description seem clear, but I'll check if they can be made more concise or if any technical jargon can be simplified without losing meaning.",
+    "In the main content, I'll look for any overly complex sentences or awkward wording that could be simplified to make the text more accessible to readers who might not be familiar with TypeScript or programming concepts.",
+    "I'll also ensure that any code snippets are correctly explained and that their purpose is clear in the context of the surrounding text.",
+    "Finally, I'll check for consistency in terminology and formatting to ensure the document is professional and easy to follow."
+  ],
+  proposed_edits: [
+    {
+      line_number: 3,
+      existing_text: 'An interesting property of as const is that it can be used to infer strings as their literal types in objects.',
+      proposed_replacement: "A useful feature of 'as const' is that it allows strings to be recognized as their specific literal types within objects.",
+      reasoning: "Simplifying the sentence structure and using 'allows' instead of 'can be used' makes the sentence more direct and easier to understand.",
+      confidence: 0.9
+    },
+    {
+      line_number: 5,
+      existing_text: "There's another interesting feature of `as const`, which we'll see in this example.",
+      proposed_replacement: "Let's explore another feature of `as const` through this example.",
+      reasoning: "Rephrasing to a more active voice ('Let's explore') engages the reader and simplifies the sentence.",
+      confidence: 0.9
+    },
+    {
+      line_number: 7,
+      existing_text: 'The `modifyButton` function accepts an `attributes` object typed as `ButtonAttributes`, which has `type` values of "button," "submit," or "reset".',  
+      proposed_replacement: 'The `modifyButton` function takes an `attributes` object of type `ButtonAttributes`, which specifies the `type` as either "button", "submit", or "reset".',
+      reasoning: "Simplifying 'accepts' to 'takes' and rephrasing the description of `type` values makes the sentence clearer and more direct.",
+      confidence: 0.9
+    },
+    {
+      line_number: 13,
+      existing_text: "As we've seen, we can fix this by adding `as const` to the `buttonAttributes` object, which makes the entire object read-only:",
+      proposed_replacement: 'As demonstrated, this issue can be resolved by adding `as const` to the `buttonAttributes` object, making it read-only:',
+      reasoning: "Using 'As demonstrated' instead of 'As we've seen' and 'this issue can be resolved' instead of 'we can fix this' makes the sentence more formal and precise.",
+      confidence: 0.9
+    },
+    {
+      line_number: 21,
+      existing_text: "However, this time the `type` property here is not read-only, but it's inferred as its literal type:",
+      proposed_replacement: 'In this case, the `type` property is not read-only, but it is still recognized as its literal type:',
+      reasoning: "Simplifying the sentence and using 'recognized' instead of 'inferred' makes the technical detail clearer and more accessible.",
+      confidence: 0.9
+    },
+    {
+      line_number: 29,
+      existing_text: "Even with `as const` applied, we're still able to modify the `type` property but only to be one of the allowed literal types:",
+      proposed_replacement: 'Even after applying `as const`, you can still change the `type` property, but only to one of the permitted literal types:',
+      reasoning: "Rephrasing for clarity and using 'you can' instead of 'we're' makes the sentence more direct and personal to the reader.",
+      confidence: 0.9
+    }
+  ]
+}
+```
+
+### Prebuilt Revision Nerd: CodeSnippetTunerNerd
+This one is a bit tricky because we're running it against source texts that sometimes include intentionally incorrect code snippets. I've attempted to account for that. The goal here is to improve any code snippets found in a source text, where "improve" is defined fairly broadly. The [definition](./src/prebuilt/revision/code_snippet_tuner_nerd.ts) is here and we can continue to tweak it. The output you'll receive looks like this:
+
+```typescript
+{
+  chain_of_thought: [
+    "First, I'll check the code snippets for syntax errors or inconsistencies.",
+    "In the TypeScript code snippet where 'buttonAttributes' is defined, there's a syntax error with the use of a semicolon instead of a comma in the object definition. This needs to be corrected to a comma for proper object syntax.",
+    "Next, I'll verify if the use of 'as const' is correctly demonstrated and if the comments in the code snippets align with the expected behavior of TypeScript.",
+    "The last code snippet incorrectly states that the 'type' property can still be modified after applying 'as const'. This is incorrect because 'as const' makes properties read-only. This needs clarification or correction to avoid misleading readers."
+  ],
+  proposed_edits: [
+    {
+      line_number: 19,
+      existing_text: 'type: "button";',
+      proposed_replacement: 'type: "button",',
+      reasoning: 'The semicolon should be a comma to correctly define an object in TypeScript.',
+      'multiple_matches?': true,
+      confidence: 1
+    },
+    {
+      line_number: 39,
+      existing_text: 'buttonAttributes.type = "button";',
+      proposed_replacement: '',
+      reasoning: "This line should be removed because it incorrectly suggests that the 'type' property can be modified after it has been declared with 'as const', which is not possible as 'as const' makes it read-only.",
+      'multiple_matches?': false,
+      confidence: 1
+    }
+  ]
+}
+```
+
+### Prebuilt Revision Nerd: PersonalityNerd
+This one is more playful, but potentially useful if you want to tweak the tone of a given text. Basically you invoke it by passing in a personality defined in some way. The nerd proposes edits to make it feel as if the document was written by someone with the given personality. It makes use of the second optional input argumennt, "runtime_instructions", to allow you to specify the personality at runtime. If you forget you'll get Deadpool and he'll use fourth-wall violations to remind you to parameterize the nerd. The [definition is here](./src/prebuilt/revision/personality_nerd.ts) and the output looks like this - the personality I specified was "a klingon warrior who is getting flustered as he attempts to write technical documentation accessible to human engineers":
+
+```typescript
+{
+  chain_of_thought: [
+    'First, I need to channel a Klingon warrior who is trying to write technical documentation for human engineers. Klingons are known for their directness and might use a more commanding tone, even when flustered. They might also express frustration or confusion in a straightforward manner.',
+    "The document is about TypeScript's 'as const' feature. I need to ensure that the technical content remains accurate while infusing the personality of a flustered Klingon warrior.",
+    "I'll look for opportunities to make the language more direct and possibly include expressions of frustration or challenge, which would be characteristic of a Klingon struggling with the task.",
+    "I'll also ensure that any changes I make do not alter the technical accuracy of the document."
+  ],
+  proposed_edits: [
+    {
+      line_number: 3,
+      existing_text: 'An interesting property of as const is that it can be used to infer strings as their literal types in objects.',
+      proposed_replacement: 'Behold the power of as const, which allows us to infer strings as their literal types in objects!',
+      reasoning: "Changing 'An interesting property' to 'Behold the power' adds a dramatic flair typical of Klingon speech, making the sentence more commanding and impactful.",
+      'multiple_matches?': false,
+      confidence: 0.9
+    },
+    {
+      line_number: 5,
+      existing_text: "There's another interesting feature of `as const`, which we'll see in this example.",
+      proposed_replacement: 'Prepare for another formidable feature of `as const`, as demonstrated in this example.',
+      reasoning: "Replacing 'There's another interesting feature' with 'Prepare for another formidable feature' increases the intensity and anticipation, aligning with a Klingon's dramatic and direct communication style.",
+      'multiple_matches?': false,
+      confidence: 0.9
+    },
+    {
+      line_number: 17,
+      existing_text: 'which causes an error when passing it into the `modifyButton` function:',
+      proposed_replacement: 'which leads to a frustrating error when attempting to pass it into the `modifyButton` function:',
+      reasoning: "Adding 'frustrating' and 'attempting' expresses a sense of struggle and annoyance, which would be characteristic of a flustered Klingon.",
+      'multiple_matches?': false,
+      confidence: 0.85
+    },
+    {
+      line_number: 29,
+      existing_text: "However, this time the `type` property here is not read-only, but it's inferred as its literal type:",
+      proposed_replacement: 'However, in this instance, the `type` property is not shackled as read-only, yet it is precisely inferred as its literal type:',
+      reasoning: "Using 'shackled' instead of 'read-only' and 'precisely' instead of 'inferred' adds a more vivid and intense language, fitting for a Klingon's expressive style.",
+      'multiple_matches?': false,
+      confidence: 0.85
+    }
+  ]
+}
+```
+
+### Prebuilt Revision Nerd: TypoNerd
+This one is very basic, it just seeks to identify typos in a given text. Honestly this is probably not the best use of LLMs since we already have spellcheck, but it was trivial to throw together and test so here we are. Definition is [here](./src/prebuilt/revision/typo_nerd.ts) and sample output is here:
+
+```typescript
+{
+  chain_of_thought: [
+    "First, I'll check for any typographical errors such as misspellings or incorrect punctuation.",
+    'I noticed that in the TypeScript code snippets, semicolons are used instead of commas in object definitions. This is a syntax error in TypeScript and should be corrected to commas.',
+    "I'll propose edits to replace the semicolons with commas in the object definitions to ensure the code is syntactically correct."
+  ],
+  proposed_edits: [
+    {
+      line_number: 18,
+      existing_text: 'type: "button";',
+      proposed_replacement: 'type: "button",',
+      reasoning: 'In TypeScript, object properties should be separated by commas, not semicolons.',
+      'multiple_matches?': true,
+      confidence: 1
+    },
+    {
+      line_number: 30,
+      existing_text: 'type: "button";',
+      proposed_replacement: 'type: "button",',
+      reasoning: 'In TypeScript, object properties should be separated by commas, not semicolons.',
+      'multiple_matches?': false,
+      confidence: 1
+    },
+    {
+      line_number: 38,
+      existing_text: 'type: "button" as const;',
+      proposed_replacement: 'type: "button" as const,',
+      reasoning: 'In TypeScript, object properties should be separated by commas, not semicolons.',
+      'multiple_matches?': false,
+      confidence: 1
+    }
+  ]
+}
+```
+
+### Prebuilt Findings Nerd: WikipediaResearchNerd
+This is more of a demo of using tools than a functionally useful nerd itself. This nerd is instructed to have ADHD and go down a wikipedia rabbit hole researching a given prompt, so the result can be a bit random. I used "Danny Greene", the Rasputin of Cleveland mob politics, as my initial prompt. Unlike the revisions nerds above, a Findings nerd just returns a list of findings. The source is [here](./src/prebuilt/findings/wikipedia_research_nerd.ts) and the output looks like this:
+
+```typescript
+{
+  chain_of_thought: [
+    'First, I looked up Danny Greene to understand his background and significance. I found that he was an American mobster in Cleveland, Ohio, involved in a conflict with the Cleveland crime family which led to his assassination.',
+    'Next, I explored the Cleveland Mafia War to see how it connected with Danny Greene. This provided context on the violent struggles within the Cleveland crime family and how Greene attempted to take over criminal rackets in the city.',
+    "I then delved deeper into Greene's personal history, discovering his challenging early life, his rise through the ranks of the International Longshoremen's Association, and his eventual leadership in organized crime.",
+    'I also examined the broader history of organized crime in Cleveland, which helped me understand the environment in which Danny Greene operated and the historical significance of the Cleveland crime family.'
+  ],
+  findings: [
+    'Danny Greene was an influential American mobster in Cleveland, Ohio, who was involved in a violent conflict with the Cleveland crime family, leading to his assassination in 1977. (https://en.wikipedia.org/wiki/Danny_Greene)',
+    "Greene first gained power as the president of the local chapter of the International Longshoremen's Association and later established his own criminal organization, the Celtic Club. (https://en.wikipedia.org/wiki/Danny_Greene)",
+    'The Cleveland Mafia War was a significant period of violence in the late 1970s, during which Greene attempted to take over the criminal rackets in Cleveland, drawing intense law enforcement scrutiny. (https://en.wikipedia.org/wiki/Cleveland_Mafia_War)',
+    'The Cleveland crime family, also known as the Scalish crime family, has been a major force in organized crime in Cleveland since the early 1900s, influencing labor racketeering and casino operations. (https://en.wikipedia.org/wiki/Cleveland_crime_family)',
+    "Danny Greene's assassination was the result of a criminal conspiracy involving Mafia families from Cleveland, New York City, and Southern California, leading to significant federal prosecutions of the Mafia. (https://en.wikipedia.org/wiki/Danny_Greene)"
+  ]
+}
+```
+
+### Prebuilt Findings Nerd: ConceptExtractorNerd
+This is the most complex nerd yet. It's wired up to a pinecone backend. You give it a content domain and it seeks to extract concepts related to that domain from a given text. Instead of just returning the concepts, though, first it checks them against a vector store that contains a list of canonical concepts. If an existing concept would suffice instead of an extracted one it replaces the initial suggestion with the canonical one. Then it writes all new concepts to the concept store and returns the final list. The source is [here](./src/prebuilt/findings/vector_backed_concept_nerd.ts) and the result looks like this. All returned concepts are in pinecone, too.
+
+**note**: in practice we probably don't want the nerd to write to pinecone, that should be a separate step. But I wanted to make sure that it could, as much for proof-of-concept reasons as anything else. This all works as described.
+
+```typescript
+{
+  chain_of_thought: [
+    "First, I need to extract relevant concepts from the provided text. The text discusses TypeScript features, specifically focusing on 'as const' and its usage in type inference and object immutability.",
+    "Identified concepts include: 'as const', 'literal type inference', 'read-only properties', 'ButtonAttributes', 'modifyButton function', 'buttonAttributes object', 'modifyButtons function', 'buttonsToChange array'.",
     'Next, I will use the existingConceptFinder tool to check if any of these concepts already exist in the store or if there are similar concepts that could be used instead.',
     'After receiving the results from the existingConceptFinder, I will decide whether to replace any of the extracted concepts with existing ones or add new concepts to the store.',
     'Finally, I will add any new concepts that are not already in the store using the addConceptsToStore tool and return the final list of concepts.'
@@ -118,103 +304,12 @@ Parsed JSON output from concept nerd:
   findings: [
     'as const',
     'literal type inference',
+    'read-only properties',
     'ButtonAttributes',
     'modifyButton function',
-    'read-only properties',
-    'type property',
+    'buttonAttributes object',
     'modifyButtons function',
     'buttonsToChange array'
-  ]
-}
-------------
-Testing PersonalityNerd
-RAW string output from personality nerd:
-{
-  "chain_of_thought": [
-    "First, I need to infuse the document with the personality of a Klingon warrior. Klingons are known for their directness, honor, and often use a commanding tone. They also value strength and combat readiness.",
-    "The document is technical, discussing TypeScript's `as const` usage. I need to maintain the technical accuracy while adjusting the tone to be more direct and forceful, as a Klingon would prefer.",
-    "I'll look for opportunities to make the language more commanding and possibly integrate metaphors related to battle or strength, which are common in Klingon expressions.",
-    "I'll start by adjusting the title and description to be more direct and possibly include a metaphor related to battle or readiness.",
-    "Next, I'll review the body of the text to find sentences that can be made more direct or infused with Klingon-like expressions."
-  ],
-  "proposed_edits": [
-    {
-      "line_number": 1,
-      "existing_text": "Infer Strings as Their Literal Types in Objects with as const",
-      "proposed_replacement": "Commanding Strings to Assume Their Literal Forms with as const",
-      "reasoning": "Changing 'Infer' to 'Commanding' gives a more direct and forceful tone, aligning with a Klingon's preference for authority and control.",
-      "multiple_matches?": false,
-      "confidence": 0.9
-    },
-    {
-      "line_number": 3,
-      "existing_text": "An interesting property of as const is that it can be used to infer strings as their literal types in objects.",
-      "proposed_replacement": "A powerful tactic of as const is that it can be wielded to ensure strings assume their literal types in objects.",
-      "reasoning": "Replacing 'interesting property' with 'powerful tactic' and 'can be used to infer' with 'can be wielded to ensure' adds a sense of strength and strategy, resonating with Klingon values.",
-      "multiple_matches?": false,
-      "confidence": 0.9
-    },
-    {
-      "line_number": 5,
-      "existing_text": "There's another interesting feature of `as const`, which we'll see in this example.",
-      "proposed_replacement": "Prepare for another formidable feature of `as const`, demonstrated in this example.",
-      "reasoning": "Using 'Prepare' and 'formidable feature' adds a sense of readiness and strength, fitting for a Klingon tone.",
-      "multiple_matches?": false,
-      "confidence": 0.9
-    },
-    {
-      "line_number": 9,
-      "existing_text": "In this example, the `buttonAttributes` object only defines `type` as \"button,\" which causes an error when passing it into the `modifyButton` function:",
-      "proposed_replacement": "In this battle scenario, the `buttonAttributes` object merely defines `type` as \"button,\" leading to a tactical error when deploying it into the `modifyButton` function:",
-      "reasoning": "Referring to the example as a 'battle scenario' and using 'tactical error' and 'deploying' adds a militaristic and strategic flavor, aligning with Klingon culture.",
-      "multiple_matches?": false,
-      "confidence": 0.9
-    }
-  ]
-}
----
-Parsed JSON output from personality nerd:
-{
-  chain_of_thought: [
-    'First, I need to infuse the document with the personality of a Klingon warrior. Klingons are known for their directness, honor, and a certain form of aggression in their language. The document is technical, so I need to maintain its clarity while adding a touch of Klingon flavor.',
-    "I'll look for opportunities to make the language more direct and forceful, perhaps using metaphors related to battle or strength where appropriate.",
-    "The title and description are straightforward, but I can make them more commanding to reflect a Klingon's assertive nature.",
-    "In the body, I'll look for sentences that can be made more direct or where powerful imagery can be subtly introduced without altering the technical content.",
-    "I'll also ensure that any changes I make do not alter the underlying technical meanings or instructions."
-  ],
-  proposed_edits: [
-    {
-      line_number: 2,
-      existing_text: 'Infer Strings as Their Literal Types in Objects with as const',
-      proposed_replacement: 'Command Strings to Reveal Their True Forms in Objects with as const',
-      reasoning: "Changing 'Infer' to 'Command' gives a more forceful, direct tone, aligning with a Klingon's commanding nature.",
-      'multiple_matches?': false,
-      confidence: 0.9
-    },
-    {
-      line_number: 3,
-      existing_text: 'An interesting property of as const is that it can be used to infer strings as their literal types in objects.',
-      proposed_replacement: 'A powerful tactic of as const is that it can be wielded to command strings to assume their literal types in objects.',
-      reasoning: "Replacing 'interesting property' with 'powerful tactic' and 'used to infer' with 'wielded to command' adds a sense of strength and strategy, resonating with Klingon culture.",
-      'multiple_matches?': false,
-      confidence: 0.9
-    },
-    {
-      line_number: 5,
-      existing_text: "There's another interesting feature of `as const`, which we'll see in this example.",
-      proposed_replacement: 'Prepare for another formidable feature of `as const`, demonstrated in this example.',
-      reasoning: "Using 'formidable feature' and 'Prepare' adds a sense of anticipation and strength, fitting for a Klingon's tone.",
-      'multiple_matches?': false,
-      confidence: 0.9
-    },
-    {
-      line_number: 27,
-      existing_text: "This property makes `as const` a handy tool to be used whenever you want to ensure a specific literal is inferred for an object you're working with.",
-      proposed_replacement: 'This property forges `as const` into a mighty weapon, to be wielded whenever you demand a specific literal to be recognized in your strategic coding endeavors.',
-      reasoning: "Referring to `as const` as a 'mighty weapon' and using 'wielded' and 'demand' enhances the aggressive and strategic tone suitable for a Klingon.",        
-      'multiple_matches?': false,
-      confidence: 0.9
-    }
   ]
 }
 ```
