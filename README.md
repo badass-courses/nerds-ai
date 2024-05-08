@@ -77,6 +77,16 @@ type BoundNerd<T extends NerdOutput> = {
 ### Nerd Output
 Fundamentally there are two kinds of nerds - those that return structured JSON objects and those that return markdown strings. In either case, a nerd's output will generally specify a "chain of thought" as well as its actual final output. There are various kinds of JSON Nerd Outputs out there - the prebuilt nerds have a simple `Findings` output type which simply returns an array of strings, and a more complex `ProposedRevisions` output type which returns some structured data whose purpose is to allow a user to build an interface where they can accept or reject proposed revisions to a text.
 
+## Project Next Steps
+I've got a lot of things I'd like to add to this project, here is a general list:
+
+* [ ] Add chat memory and conversational context to the nerds so they're not just one-and-done if you don't want them to be.
+* [ ] Building on the ConceptExtraction model with vector-store based canonical concepts, I want to build a graph data extractor. The idea would be to extract a graph of concepts from a given text, and then use that graph to build a structured JSON object that represents the relationships between those concepts and persist it in something like Nebula. This graph can then be used via a RAG flow to feed into other nerds.
+* [ ] Add input pre-processors so that nerds can do things like insert line-number annotations and other things to their input prior to running them.
+* [ ] Make `agent_specifier` completely internal. In practice every decision it makes should be able to be automated based on e.g. whether or not the nerd is using tools, and which platform we're running against.
+* [ ] Create a `DynamicToolNerd` which is designed to allow users to implement tools with specific signatures at runtime. This way we could e.g. implement a ConceptStore nerd that has its own bespoke database accessors that e.g. perform I/O against a dynamically defined pinecone index and also allow writes to a separate K/V store that actually tracks concepts, etc.
+* [ ] LangChain exposes an experimental AutoGPT feature. I haven't dug too deeply into this yet, but I think that I can swing this in a way that would allow me to build an "AutoNerd" that has access to the full suite of nerds as well as the capacity implement entirely new nerds as it runs. This could then become the "Digital Gardener" we've talked about, constantly running against the entire suite of content and proposing revisions constantly over time without needing to be invoked directly.
+
 ## Prebuilt Nerds
 This is a running list of prebuilt nerds including sample outputs when run against a document from the egghead source material. The input document is not checked into the repo because those texts are proprietary, I'm happy to share them with other egghead folks if you want to run them yourselves or you can run them against your own stuff.
 
@@ -87,6 +97,8 @@ There are currently two JSON output types defined. Both return an object with a 
 * `Revisions` - A Revisions nerd is a bit more ambitious. Given some text input, it returns a list of proposed revisions to that text. The idea is that a user can then accept/reject those revisions via some user interface, seamlessly mutating the text.
 
 I've got a number of different kinds of prebuilt nerds that implement these two basic types, and as you can see it's hopefully pretty straightforward to define new ones. The examples you'll find below are all defined in [./scripts/simple](./scripts/simple/) and you can run them yourself if you have the appropriate environment variables defined and can supply text input. Note that we are generating inputs only against OpenAI, but all tools except wiki and content extraction are available for Anthropic and Google as well. The tool-using nerds (wiki and context) require a tool-using LLM, and currently Gemini doesn't support that so they won't work with Gemini, but work fine with Anthropic as well as OpenAI.
+
+**note on revision output**: The `line` field is not at all reliable. I'm going to add an input preprocessor to these nerds that inserts line numbers on every line, and I'm hoping that with that in place the LLM will be able to more accurately identify the line on which a given revision should be made.
 
 ### Prebuilt Revision Nerd: AccessibleLanguageNerd
 This nerd takes a text input and returns a list of proposed revisions to make the text more accessible. This is a good example of a nerd that returns a `Revisions` object. The [definition](./src/prebuilt/revision/accessible_language_nerd.ts) is straightforward and easily tunable. The output you'll receive looks like this:
