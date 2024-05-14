@@ -1,14 +1,18 @@
 import { NerdBinder, NerdBuilder } from "../../main.js"
 import { buildSimpleAgentSpecifier, buildToolCallingAgentSpecifier } from "../../nerd_builder/agent_specifiers/index.js"
+import { line_number_inserter } from "../../nerd_builder/input_preprocessors/line_number_inserter.js"
 import { revision_parser, ProposedRevisions } from "../../nerd_builder/parsers/json/revision.js"
 import { BaseNerdOptions, BoundNerd } from "../../nerd_builder/types.js"
 
-type RevisedNerdBuilder = (opts: BaseNerdOptions) => Promise<BoundNerd<ProposedRevisions>>
-export const buildRevisionNerd: RevisedNerdBuilder = async (nerd_opts) => {
+type RevisionNerdBuilder = (opts: BaseNerdOptions) => Promise<BoundNerd<ProposedRevisions>>
+export const buildRevisionNerd: RevisionNerdBuilder = async (nerd_opts) => {
   const has_tools = nerd_opts.tools && nerd_opts.tools.length > 0
 
   const agent_specifier = has_tools ? buildToolCallingAgentSpecifier(nerd_opts.tools) : buildSimpleAgentSpecifier()
   const nerdBuilder = new NerdBuilder<ProposedRevisions>(revision_parser, agent_specifier)
+  const preprocessors = nerd_opts.input_preprocessors || []
+  preprocessors.push(line_number_inserter)
+  nerd_opts.input_preprocessors = preprocessors;
   const nerd = nerdBuilder.build(nerd_opts)
   const nerdBinder = new NerdBinder<ProposedRevisions>(nerd)
 

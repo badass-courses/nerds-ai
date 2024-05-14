@@ -8,7 +8,7 @@ const concept_nerd = await buildPineconeBackedConceptNerd({}, { domain: "Technic
 
 
 const main = async () => {
-  const text = readFileSync('./sources/107-as-const-can-make-strings-infer-as-their-literals-in-objects.md');
+  const text = readFileSync('./sources/107-as-const-can-make-strings-infer-as-their-literals-in-objects.md', 'utf-8');
   console.log("Testing " + concept_nerd.name)
   
   const concept_raw = await concept_nerd.with_openai.invoke_raw(text, "")

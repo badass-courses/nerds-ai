@@ -17,6 +17,7 @@ export class NerdBuilder<T extends NerdOutput> {
       as_tool_description: options.as_tool_description,
       additional_notes: options.additional_notes,
       tools: options.tools,
+      input_preprocessors: options.input_preprocessors || [],
       parser: this.parser,
       agent_specifier: this.agent_specifier
     }
