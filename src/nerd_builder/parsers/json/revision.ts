@@ -9,10 +9,12 @@ export const schema = `{
 
   // return as many proposed edits as you can so long as you are confident that they serve the needs of the operation requested.
   "proposed_edits": [{
-    // the line number in the source document where the text you'd like to replace is found.
+    // the line number in the source document where the text you'd like to replace starts. Note that the text should be annotated with an
+    // integer followed by a pipe character and a tab. When proposing revisions, please base use these annotations as the basis for your line numbers.
     line_number: number
 
     // the specific text from the source document that you'd like to replace. this should be identifiable via string matching, it must be exact.
+    // note that the text may have been annotated with line numbers at the start of each line - please leave these annotations out of your selection.
     "existing_text": string
 
     // offer a string of text to replace the selection above. An empty string is a valid value for removal.
@@ -25,6 +27,7 @@ export const schema = `{
     "multiple_matches?": boolean
 
     // a value from 0-1 expressing how certain you are that the edit you're proposing is necessary and correct.
+    // your other instructions may give you guidance for determining this value in a given operation.
     "confidence": number
   }]
 }`

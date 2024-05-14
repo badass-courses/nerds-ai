@@ -5,6 +5,8 @@ import { ChatPromptTemplate } from "@langchain/core/prompts"
 
 export type Platform = "OPEN_AI" | "ANTHROPIC" | "GEMINI"
 
+export type NerdInputPreprocessor = (input: string) => Promise<string>
+
 export type BaseNerd<T extends NerdOutput> = {
   name: string
   purpose: string
@@ -15,6 +17,7 @@ export type BaseNerd<T extends NerdOutput> = {
   tools?: StructuredToolInterface[],
   parser: NerdOutputParser<T>,
   agent_specifier: AgentSpecifier
+  input_preprocessors?: NerdInputPreprocessor[]
 }
 
 export type BindableNerd<T extends NerdOutput> = BaseNerd<T> & {
@@ -39,6 +42,7 @@ export type BaseNerdOptions = {
   additional_notes?: string
   as_tool_description: string
   tools?: StructuredToolInterface[]
+  input_preprocessors?: NerdInputPreprocessor[]
 }
 
 export type BoundNerd<T extends NerdOutput> = {

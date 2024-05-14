@@ -9,6 +9,7 @@ import { createRunner } from "../runners/index.js"
 import { OutputFixingParser } from "langchain/output_parsers"
 import { ChatOpenAI } from "@langchain/openai"
 import { RunnableConfig } from "@langchain/core/runnables"
+import { apply_preprocessors } from "../input_preprocessors/index.js"
 
 export class NerdPlatformBinder<OutputType extends NerdOutput = string> {
   prompt: ChatPromptTemplate
@@ -44,8 +45,9 @@ export class NerdPlatformBinder<OutputType extends NerdOutput = string> {
     const invoke = async (input: string, querytime_instructions: string = ""): Promise<OutputType> => {
       const parser = OutputFixingParser.fromLLM(new ChatOpenAI(), this.nerd.parser)
       const runner = await this.construct_runner(llm)
+      const processed_input = await apply_preprocessors(input, this.nerd.input_preprocessors || [])
       const agent_output = await runner.invoke({
-        input,
+        input: processed_input,
         querytime_instructions,
         format_instructions: this.nerd.parser.getFormatInstructions()
       }, this.getInvocationOpts(platform))
@@ -56,8 +58,9 @@ export class NerdPlatformBinder<OutputType extends NerdOutput = string> {
 
     const invoke_raw = async (input: string, querytime_instructions: string = ""): Promise<string> => {
       const runner = await this.construct_runner(llm);
+      const processed_input = await apply_preprocessors(input, this.nerd.input_preprocessors || [])
       const result = await runner.invoke({
-        input,
+        input: processed_input,
         querytime_instructions,
         format_instructions: this.nerd.parser.getFormatInstructions()
       }, this.getInvocationOpts(platform))
