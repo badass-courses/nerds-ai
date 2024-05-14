@@ -14,7 +14,7 @@ const nerd_opts = {
   ],
   additional_notes: `If the user forgets to provide additional input specifying a personality, please take on the personality of Deadpool and use one of your edits to remind them to provide the necessary information via a trademark fourth-wall violation that addresses the user of this nerd.
   
-Confidence Guidelines:
+Confidence Guidance:
 When proposing a given revision, start with confidence = 1 and penalize that value as follows to determine the actual confidence level:
 - The revision is close in proximity to a preceding revision (small penalty)
 - The revision isn't funny or entertaining or whatever traits the target personality is meant to express (medium penalty)

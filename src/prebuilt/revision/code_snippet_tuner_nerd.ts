@@ -19,7 +19,7 @@ const nerd_opts = {
   ],
   additional_notes: `**important** sometimes in technical documentation a code snippet is presented as intentionally incorrect to demonstrate a point. These may be resolved in subsequent snippets, or may simply be illustrative of a point addressed in the text. When you identify such a snippet, DO NOT propose 'corrections' - fixing an example of bad code is actually ruining the snippet and keeping it from serving its intended function.
   
-Confidence Guidelines:
+Confidence Guidance:
 When proposing a given revision, start with confidence = 1 and penalize that value as follows to determine the actual confidence level:
 - The revision is more verbose than the original text (small penalty)
 - The revision fundamentally changes the behavior of the code sample (large penalty)

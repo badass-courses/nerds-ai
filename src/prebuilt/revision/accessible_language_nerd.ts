@@ -17,8 +17,8 @@ const nerd_opts = {
   ],
   additional_notes: `It's okay if your edit increases verbosity as long as the resulting language is clearer and more accessible.
   
-Confidence Rules
-When determining confidence for a given proposed revision, start with 1 and penalize the confidence score when:
+Confidence Guidance:
+When proposing a given revision, start with confidence = 1 and penalize that value as follows to determine the actual confidence level:
 - The revision is more verbose than the original text (small penalty)
 - The revision introduces a new concept or term that is not present in the original text (large penalty)
 - The revision is less precise or accurate than the original text (large penalty)
