@@ -87,10 +87,10 @@ I've got a lot of things I'd like to add to this project, here is a general list
 
 - [ ] Add chat memory and conversational context to the nerds so they're not just one-and-done if you don't want them to be.
 - [ ] Building on the ConceptExtraction model with vector-store based canonical concepts, I want to build a graph data extractor. The idea would be to extract a graph of concepts from a given text, and then use that graph to build a structured JSON object that represents the relationships between those concepts and persist it in something like Nebula. This graph can then be used via a RAG flow to feed into other nerds.
-- [x] Add input pre-processors so that nerds can do things like insert line-number annotations and other things to their input prior to running them.
-- [x] Make `agent_specifier` completely internal. In practice every decision it makes should be able to be automated based on e.g. whether or not the nerd is using tools, and which platform we're running against.
 - [ ] Create a `DynamicToolNerd` which is designed to allow users to implement tools with specific signatures at runtime. This way we could e.g. implement a ConceptStore nerd that has its own bespoke database accessors that e.g. perform I/O against a dynamically defined pinecone index and also allow writes to a separate K/V store that actually tracks concepts, etc.
 - [ ] LangChain exposes an experimental AutoGPT feature. I haven't dug too deeply into this yet, but I think that I can swing this in a way that would allow me to build an "AutoNerd" that has access to the full suite of nerds as well as the capacity implement entirely new nerds as it runs. This could then become the "Digital Gardener" we've talked about, constantly running against the entire suite of content and proposing revisions constantly over time without needing to be invoked directly.
+- [x] Add input pre-processors so that nerds can do things like insert line-number annotations and other things to their input prior to running them.
+- [x] Make `agent_specifier` completely internal. In practice every decision it makes should be able to be automated based on e.g. whether or not the nerd is using tools, and which platform we're running against.
 
 ## Prebuilt Nerds
 
@@ -105,8 +105,6 @@ There are currently two JSON output types defined. Both return an object with a 
 
 I've got a number of different kinds of prebuilt nerds that implement these two basic types, and as you can see it's hopefully pretty straightforward to define new ones. The examples you'll find below are all defined in [./scripts/simple](./scripts/simple/) and you can run them yourself if you have the appropriate environment variables defined and can supply text input. Note that we are generating inputs only against OpenAI, but all tools except wiki and content extraction are available for Anthropic and Google as well. The tool-using nerds (wiki and context) require a tool-using LLM, and currently Gemini doesn't support that so they won't work with Gemini, but work fine with Anthropic as well as OpenAI.
 
-**note on revision output**: The `line` field is not at all reliable. I'm going to add an input preprocessor to these nerds that inserts line numbers on every line, and I'm hoping that with that in place the LLM will be able to more accurately identify the line on which a given revision should be made.
-
 ### Prebuilt Revision Nerd: AccessibleLanguageNerd
 
 This nerd takes a text input and returns a list of proposed revisions to make the text more accessible. This is a good example of a nerd that returns a `Revisions` object. The [definition](./src/prebuilt/revision/accessible_language_nerd.ts) is straightforward and easily tunable. The output you'll receive looks like this:
@@ -114,53 +112,90 @@ This nerd takes a text input and returns a list of proposed revisions to make th
 ```typescript
 {
   thought_log: [
-    "First, I'll review the text for clarity and readability, focusing on simplifying complex sentences and ensuring the technical content remains precise.",
-    "The title and description seem clear, but I'll check if they can be made more concise or if any technical jargon can be simplified without losing meaning.",
-    "In the main content, I'll look for any overly complex sentences or awkward wording that could be simplified to make the text more accessible to readers who might not be familiar with TypeScript or programming concepts.",
-    "I'll also ensure that any code snippets are correctly explained and that their purpose is clear in the context of the surrounding text.",
-    "Finally, I'll check for consistency in terminology and formatting to ensure the document is professional and easy to follow."
+    'First, I will read through the entire text to understand its content and context.',
+    'Next, I will identify any complex sentences or technical jargon that can be simplified without losing meaning.',
+    'I will also look for any awkward wording that can be improved for better readability.',
+    'I will ensure that the technical terms are preserved to maintain the accuracy of the content.'
   ],
   proposed_edits: [
     {
-      line_number: 3,
+      line_number: 2,
       existing_text: 'An interesting property of as const is that it can be used to infer strings as their literal types in objects.',
-      proposed_replacement: "A useful feature of 'as const' is that it allows strings to be recognized as their specific literal types within objects.",
-      reasoning: "Simplifying the sentence structure and using 'allows' instead of 'can be used' makes the sentence more direct and easier to understand.",
+      proposed_replacement: 'A useful feature of `as const` is that it can make strings keep their exact values in objects.',
+      reasoning: 'Simplified the sentence to make it more readable while preserving the technical meaning.',
+      'multiple_matches?': false,
       confidence: 0.9
     },
     {
-      line_number: 5,
+      line_number: 6,
       existing_text: "There's another interesting feature of `as const`, which we'll see in this example.",
-      proposed_replacement: "Let's explore another feature of `as const` through this example.",
-      reasoning: "Rephrasing to a more active voice ('Let's explore') engages the reader and simplifies the sentence.",
+      proposed_replacement: "Here's another useful feature of `as const`, shown in this example.",
+      reasoning: 'Simplified the sentence for better readability.',
+      'multiple_matches?': false,
       confidence: 0.9
     },
     {
-      line_number: 7,
+      line_number: 8,
       existing_text: 'The `modifyButton` function accepts an `attributes` object typed as `ButtonAttributes`, which has `type` values of "button," "submit," or "reset".',
-      proposed_replacement: 'The `modifyButton` function takes an `attributes` object of type `ButtonAttributes`, which specifies the `type` as either "button", "submit", or "reset".',
-      reasoning: "Simplifying 'accepts' to 'takes' and rephrasing the description of `type` values makes the sentence clearer and more direct.",
+      proposed_replacement: 'The `modifyButton` function takes an `attributes` object with a `type` that can be "button," "submit," or "reset".',
+      reasoning: 'Simplified the sentence structure for better readability.',
+      'multiple_matches?': false,
       confidence: 0.9
     },
     {
-      line_number: 13,
-      existing_text: "As we've seen, we can fix this by adding `as const` to the `buttonAttributes` object, which makes the entire object read-only:",
-      proposed_replacement: 'As demonstrated, this issue can be resolved by adding `as const` to the `buttonAttributes` object, making it read-only:',
-      reasoning: "Using 'As demonstrated' instead of 'As we've seen' and 'this issue can be resolved' instead of 'we can fix this' makes the sentence more formal and precise.",
-      confidence: 0.9
-    },
-    {
-      line_number: 21,
-      existing_text: "However, this time the `type` property here is not read-only, but it's inferred as its literal type:",
-      proposed_replacement: 'In this case, the `type` property is not read-only, but it is still recognized as its literal type:',
-      reasoning: "Simplifying the sentence and using 'recognized' instead of 'inferred' makes the technical detail clearer and more accessible.",
+      line_number: 19,
+      existing_text: 'In this example, the `buttonAttributes` object only defines `type` as "button," which causes an error when passing it into the `modifyButton` function:',
+      proposed_replacement: 'In this example, the `buttonAttributes` object only has `type` set to "button," which causes an error when passed to the `modifyButton` function:',
+      reasoning: 'Simplified the sentence for better readability.',
+      'multiple_matches?': false,
       confidence: 0.9
     },
     {
       line_number: 29,
+      existing_text: "As we've seen, we can fix this by adding `as const` to the `buttonAttributes` object, which makes the entire object read-only:",
+      proposed_replacement: 'We can fix this by adding `as const` to the `buttonAttributes` object, making the whole object read-only:',
+      reasoning: 'Simplified the sentence for better readability.',
+      'multiple_matches?': false,
+      confidence: 0.9
+    },
+    {
+      line_number: 42,
+      existing_text: 'We can also apply `as const` to just `type` property:',
+      proposed_replacement: 'We can also apply `as const` to just the `type` property:',
+      reasoning: "Added 'the' for grammatical correctness.",
+      'multiple_matches?': false,
+      confidence: 0.9
+    },
+    {
+      line_number: 50,
+      existing_text: "However, this time the `type` property here is not read-only, but it's inferred as its literal type:",
+      proposed_replacement: 'This time, the `type` property is not read-only but is inferred as its exact value:',
+      reasoning: 'Simplified the sentence for better readability.',
+      'multiple_matches?': false,
+      confidence: 0.9
+    },
+    {
+      line_number: 59,
+      existing_text: 'Building on this, we could also ensure the literal type inference for various properties in an array of objects by adding `as const` after each `type` property:',
+      proposed_replacement: 'We can also make sure the exact values are kept for properties in an array of objects by adding `as const` after each `type` property:',
+      reasoning: 'Simplified the sentence for better readability.',
+      'multiple_matches?': false,
+      confidence: 0.9
+    },
+    {
+      line_number: 74,
       existing_text: "Even with `as const` applied, we're still able to modify the `type` property but only to be one of the allowed literal types:",
-      proposed_replacement: 'Even after applying `as const`, you can still change the `type` property, but only to one of the permitted literal types:',
-      reasoning: "Rephrasing for clarity and using 'you can' instead of 'we're' makes the sentence more direct and personal to the reader.",
+      proposed_replacement: 'Even with `as const`, we can still change the `type` property, but only to one of the allowed values:',
+      reasoning: 'Simplified the sentence for better readability.',
+      'multiple_matches?': false,
+      confidence: 0.9
+    },
+    {
+      line_number: 80,
+      existing_text: "This property makes `as const` a handy tool to be used whenever you want to ensure a specific literal is inferred for an object you're working with.",
+      proposed_replacement: 'This feature makes `as const` a useful tool when you want to make sure an object keeps specific values.',
+      reasoning: 'Simplified the sentence for better readability.',
+      'multiple_matches?': false,
       confidence: 0.9
     }
   ]
@@ -174,25 +209,33 @@ This one is a bit tricky because we're running it against source texts that some
 ```typescript
 {
   thought_log: [
-    "First, I'll check the code snippets for syntax errors or inconsistencies.",
-    "In the TypeScript code snippet where 'buttonAttributes' is defined, there's a syntax error with the use of a semicolon instead of a comma in the object definition. This needs to be corrected to a comma for proper object syntax.",
-    "Next, I'll verify if the use of 'as const' is correctly demonstrated and if the comments in the code snippets align with the expected behavior of TypeScript.",
-    "The last code snippet incorrectly states that the 'type' property can still be modified after applying 'as const'. This is incorrect because 'as const' makes properties read-only. This needs clarification or correction to avoid misleading readers."
+    'First, I will review the code snippets to ensure they are correct and idiomatic.',
+    'I will check for consistency in variable names and ensure the code demonstrates what the text describes.',
+    'I will add comments to any code snippets that might lack clarity.',
+    'I will ensure that the code snippets are correct and idiomatic without changing their fundamental behavior.'
   ],
   proposed_edits: [
     {
-      line_number: 19,
+      line_number: 23,
       existing_text: 'type: "button";',
       proposed_replacement: 'type: "button",',
-      reasoning: 'The semicolon should be a comma to correctly define an object in TypeScript.',
-      'multiple_matches?': true,
+      reasoning: 'In JavaScript/TypeScript object literals, properties should be separated by commas, not semicolons. This is a syntax error.',
+      'multiple_matches?': false,
       confidence: 1
     },
     {
-      line_number: 39,
+      line_number: 33,
+      existing_text: 'type: "button";',
+      proposed_replacement: 'type: "button",',
+      reasoning: 'In JavaScript/TypeScript object literals, properties should be separated by commas, not semicolons. This is a syntax error.',
+      'multiple_matches?': false,
+      confidence: 1
+    },
+    {
+      line_number: 77,
       existing_text: 'buttonAttributes.type = "button";',
-      proposed_replacement: '',
-      reasoning: "This line should be removed because it incorrectly suggests that the 'type' property can be modified after it has been declared with 'as const', which is not possible as 'as const' makes it read-only.",
+      proposed_replacement: 'buttonAttributes.type = "submit";',
+      reasoning: "The example should demonstrate changing the type to another allowed literal type ('submit' or 'reset') to show that the property can be modified within the allowed types.",
       'multiple_matches?': false,
       confidence: 1
     }
@@ -207,43 +250,59 @@ This one is more playful, but potentially useful if you want to tweak the tone o
 ```typescript
 {
   thought_log: [
-    'First, I need to channel a Klingon warrior who is trying to write technical documentation for human engineers. Klingons are known for their directness and might use a more commanding tone, even when flustered. They might also express frustration or confusion in a straightforward manner.',
-    "The document is about TypeScript's 'as const' feature. I need to ensure that the technical content remains accurate while infusing the personality of a flustered Klingon warrior.",
-    "I'll look for opportunities to make the language more direct and possibly include expressions of frustration or challenge, which would be characteristic of a Klingon struggling with the task.",
-    "I'll also ensure that any changes I make do not alter the technical accuracy of the document."
+    "First, I need to identify areas where the Klingon warrior's flustered personality can be injected into the text.",
+    'The document is technical, so the edits should maintain clarity while adding a sense of frustration or intensity.',
+    "I'll start by looking for places where the text can be made more expressive or where the Klingon might show frustration with the complexity of human technology."
   ],
   proposed_edits: [
     {
-      line_number: 3,
-      existing_text: 'An interesting property of as const is that it can be used to infer strings as their literal types in objects.',
-      proposed_replacement: 'Behold the power of as const, which allows us to infer strings as their literal types in objects!',
-      reasoning: "Changing 'An interesting property' to 'Behold the power' adds a dramatic flair typical of Klingon speech, making the sentence more commanding and impactful.",
-      'multiple_matches?': false,
-      confidence: 0.9
-    },
-    {
-      line_number: 5,
+      line_number: 6,
       existing_text: "There's another interesting feature of `as const`, which we'll see in this example.",
-      proposed_replacement: 'Prepare for another formidable feature of `as const`, as demonstrated in this example.',
-      reasoning: "Replacing 'There's another interesting feature' with 'Prepare for another formidable feature' increases the intensity and anticipation, aligning with a Klingon's dramatic and direct communication style.",
-      'multiple_matches?': false,
-      confidence: 0.9
+      proposed_replacement: 'Behold, another feature of `as const` that even a Klingon warrior must acknowledge, as we shall see in this example.',
+      reasoning: 'Adding a sense of reluctant admiration and intensity to the introduction of the feature.',
+      confidence: 1
     },
     {
-      line_number: 17,
-      existing_text: 'which causes an error when passing it into the `modifyButton` function:',
-      proposed_replacement: 'which leads to a frustrating error when attempting to pass it into the `modifyButton` function:',
-      reasoning: "Adding 'frustrating' and 'attempting' expresses a sense of struggle and annoyance, which would be characteristic of a flustered Klingon.",
-      'multiple_matches?': false,
-      confidence: 0.85
+      line_number: 19,
+      existing_text: 'In this example, the `buttonAttributes` object only defines `type` as "button," which causes an error when passing it into the `modifyButton` function:',
+      proposed_replacement: 'In this cursed example, the `buttonAttributes` object only defines `type` as "button," causing an infuriating error when passing it into the `modifyButton` function:',
+      reasoning: "Expressing frustration with the error to reflect the Klingon warrior's personality.",
+      confidence: 1
     },
     {
       line_number: 29,
+      existing_text: "As we've seen, we can fix this by adding `as const` to the `buttonAttributes` object, which makes the entire object read-only:",
+      proposed_replacement: 'As we have painfully discovered, we can fix this by adding `as const` to the `buttonAttributes` object, making the entire object read-only:',
+      reasoning: 'Adding a sense of struggle and discovery to the solution.',
+      confidence: 1
+    },
+    {
+      line_number: 42,
+      existing_text: 'We can also apply `as const` to just `type` property:',
+      proposed_replacement: 'We can also apply `as const` to just the `type` property, if you wish to avoid further dishonor:',
+      reasoning: 'Adding a touch of Klingon honor culture to the explanation.',
+      confidence: 1
+    },
+    {
+      line_number: 50,
       existing_text: "However, this time the `type` property here is not read-only, but it's inferred as its literal type:",
-      proposed_replacement: 'However, in this instance, the `type` property is not shackled as read-only, yet it is precisely inferred as its literal type:',
-      reasoning: "Using 'shackled' instead of 'read-only' and 'precisely' instead of 'inferred' adds a more vivid and intense language, fitting for a Klingon's expressive style.",
-      'multiple_matches?': false,
-      confidence: 0.85
+      proposed_replacement: 'However, this time the `type` property is not read-only, but it is inferred as its literal type, a small victory in this battle:',
+      reasoning: 'Adding a sense of triumph to the explanation.',
+      confidence: 1
+    },
+    {
+      line_number: 74,
+      existing_text: "Even with `as const` applied, we're still able to modify the `type` property but only to be one of the allowed literal types:",
+      proposed_replacement: 'Even with `as const` applied, we are still able to modify the `type` property, but only to one of the allowed literal types, as if the universe mocks us:',
+      reasoning: 'Adding a sense of frustration and struggle with the limitations.',
+      confidence: 1
+    },
+    {
+      line_number: 80,
+      existing_text: "This property makes `as const` a handy tool to be used whenever you want to ensure a specific literal is inferred for an object you're working with.",
+      proposed_replacement: 'This property makes `as const` a formidable tool, to be wielded whenever you wish to ensure a specific literal is inferred for an object you are battling with.',
+      reasoning: 'Adding a sense of combat and intensity to the conclusion.',
+      confidence: 1
     }
   ]
 }
@@ -256,34 +315,35 @@ This one is very basic, it just seeks to identify typos in a given text. Honestl
 ```typescript
 {
   thought_log: [
-    "First, I'll check for any typographical errors such as misspellings or incorrect punctuation.",
-    'I noticed that in the TypeScript code snippets, semicolons are used instead of commas in object definitions. This is a syntax error in TypeScript and should be corrected to commas.',
-    "I'll propose edits to replace the semicolons with commas in the object definitions to ensure the code is syntactically correct."
+    'First, I will read through the entire document to understand its content and context.',
+    'Next, I will identify any typos, missing words, or punctuation errors.',
+    'I will also ensure consistency in the use of acronyms and domain-specific vocabulary.',
+    'I will start from the top and work my way down, line by line.'
   ],
   proposed_edits: [
     {
-      line_number: 18,
+      line_number: 23,
       existing_text: 'type: "button";',
       proposed_replacement: 'type: "button",',
-      reasoning: 'In TypeScript, object properties should be separated by commas, not semicolons.',
-      'multiple_matches?': true,
-      confidence: 1
-    },
-    {
-      line_number: 30,
-      existing_text: 'type: "button";',
-      proposed_replacement: 'type: "button",',
-      reasoning: 'In TypeScript, object properties should be separated by commas, not semicolons.',
+      reasoning: 'In JavaScript object notation, properties should be separated by commas, not semicolons.',
       'multiple_matches?': false,
       confidence: 1
     },
     {
-      line_number: 38,
-      existing_text: 'type: "button" as const;',
-      proposed_replacement: 'type: "button" as const,',
-      reasoning: 'In TypeScript, object properties should be separated by commas, not semicolons.',
+      line_number: 33,
+      existing_text: 'type: "button";',
+      proposed_replacement: 'type: "button",',
+      reasoning: 'In JavaScript object notation, properties should be separated by commas, not semicolons.',
       'multiple_matches?': false,
       confidence: 1
+    },
+    {
+      line_number: 77,
+      existing_text: 'buttonAttributes.type = "button";',
+      proposed_replacement: 'buttonAttributes.type = "submit";',
+      reasoning: 'The example should show changing the type to a different allowed literal type to demonstrate the flexibility of `as const`.',
+      'multiple_matches?': false,
+      confidence: 0.9
     }
   ]
 }
@@ -291,22 +351,24 @@ This one is very basic, it just seeks to identify typos in a given text. Honestl
 
 ### Prebuilt Findings Nerd: WikipediaResearchNerd
 
-This is more of a demo of using tools than a functionally useful nerd itself. This nerd is instructed to have ADHD and go down a wikipedia rabbit hole researching a given prompt, so the result can be a bit random. I used "Danny Greene", the Rasputin of Cleveland mob politics, as my initial prompt. Unlike the revisions nerds above, a Findings nerd just returns a list of findings. The source is [here](./src/prebuilt/findings/wikipedia_research_nerd.ts) and the output looks like this:
+This is more of a demo of using tools than a functionally useful nerd itself. This nerd is instructed to have ADHD and go down a wikipedia rabbit hole researching a given prompt, so the result can be a bit random. I used "the minions" as my initial prompt. Unlike the revisions nerds above, a Findings nerd just returns a list of findings. The source is [here](./src/prebuilt/findings/wikipedia_research_nerd.ts) and the output looks like this:
 
 ```typescript
 {
   thought_log: [
-    'First, I looked up Danny Greene to understand his background and significance. I found that he was an American mobster in Cleveland, Ohio, involved in a conflict with the Cleveland crime family which led to his assassination.',
-    'Next, I explored the Cleveland Mafia War to see how it connected with Danny Greene. This provided context on the violent struggles within the Cleveland crime family and how Greene attempted to take over criminal rackets in the city.',
-    "I then delved deeper into Greene's personal history, discovering his challenging early life, his rise through the ranks of the International Longshoremen's Association, and his eventual leadership in organized crime.",
-    'I also examined the broader history of organized crime in Cleveland, which helped me understand the environment in which Danny Greene operated and the historical significance of the Cleveland crime family.'
+    "I started by searching for 'Minions' on Wikipedia to get an overview of the topic.",
+    "The initial search provided information about the 2015 film 'Minions' and its plot.",
+    "To gather more comprehensive information, I decided to search for related topics such as 'Despicable Me', 'Illumination Entertainment', 'Villain-Con', and 'Minions: The Rise of Gru'.",
+    'I executed parallel searches for these topics to maximize efficiency.',
+    "The searches returned detailed information about the 'Despicable Me' franchise, Illumination Entertainment, and the sequel 'Minions: The Rise of Gru'."
   ],
   findings: [
-    'Danny Greene was an influential American mobster in Cleveland, Ohio, who was involved in a violent conflict with the Cleveland crime family, leading to his assassination in 1977. (https://en.wikipedia.org/wiki/Danny_Greene)',
-    "Greene first gained power as the president of the local chapter of the International Longshoremen's Association and later established his own criminal organization, the Celtic Club. (https://en.wikipedia.org/wiki/Danny_Greene)",
-    'The Cleveland Mafia War was a significant period of violence in the late 1970s, during which Greene attempted to take over the criminal rackets in Cleveland, drawing intense law enforcement scrutiny. (https://en.wikipedia.org/wiki/Cleveland_Mafia_War)',
-    'The Cleveland crime family, also known as the Scalish crime family, has been a major force in organized crime in Cleveland since the early 1900s, influencing labor racketeering and casino operations. (https://en.wikipedia.org/wiki/Cleveland_crime_family)',
-    "Danny Greene's assassination was the result of a criminal conspiracy involving Mafia families from Cleveland, New York City, and Southern California, leading to significant federal prosecutions of the Mafia. (https://en.wikipedia.org/wiki/Danny_Greene)"
+    "Minions are small, yellow, pill-shaped creatures that have existed since the beginning of time, evolving from single-celled organisms to beings that exist only to serve history's most evil masters. [https://en.wikipedia.org/wiki/Minions_(film)]",
+    "The 2015 film 'Minions' is a prequel to 'Despicable Me' and follows the Minions as they search for a new evil master after accidentally killing all their previous ones. [https://en.wikipedia.org/wiki/Minions_(film)]",
+    "The 'Despicable Me' franchise includes three main films and two spin-off prequels, making it the highest-grossing animated film franchise of all time. [https://en.wikipedia.org/wiki/Despicable_Me]",
+    "Illumination Entertainment, founded in 2007, is the animation studio behind the 'Despicable Me' and 'Minions' films. The studio is known for its cost-effective production model and high-grossing films. [https://en.wikipedia.org/wiki/Illumination_(company)]",
+    "Villain-Con is a fictional convention for villains featured in the 'Minions' film, where the Minions meet Scarlet Overkill, the world's first female supervillain. [https://en.wikipedia.org/wiki/Minions_(film)]",
+    "The sequel 'Minions: The Rise of Gru' (2022) follows an eleven-year-old Gru as he plans to become a supervillain with the help of his Minions, leading to a showdown with the Vicious 6. [https://en.wikipedia.org/wiki/Minions:_The_Rise_of_Gru]"
   ]
 }
 ```
@@ -320,21 +382,22 @@ This is the most complex nerd yet. It's wired up to a pinecone backend. You give
 ```typescript
 {
   thought_log: [
-    "First, I need to extract relevant concepts from the provided text. The text discusses TypeScript features, specifically focusing on 'as const' and its usage in type inference and object immutability.",
-    "Identified concepts include: 'as const', 'literal type inference', 'read-only properties', 'ButtonAttributes', 'modifyButton function', 'buttonAttributes object', 'modifyButtons function', 'buttonsToChange array'.",
-    'Next, I will use the existingConceptFinder tool to check if any of these concepts already exist in the store or if there are similar concepts that could be used instead.',
-    'After receiving the results from the existingConceptFinder, I will decide whether to replace any of the extracted concepts with existing ones or add new concepts to the store.',
-    'Finally, I will add any new concepts that are not already in the store using the addConceptsToStore tool and return the final list of concepts.'
+    'First, I need to extract relevant concepts from the given text.',
+    'Next, I will use the existingConceptFinder tool to check if any of the extracted concepts already exist in the store.',
+    'Based on the results, I will decide whether to use the existing concepts or add new ones.',
+    'Finally, I will add any new concepts to the store and return the final list of concepts.',
+    "I have extracted the following concepts: 'as const', 'literal types', 'ButtonAttributes', 'modifyButton function', 'type property', 'read-only', 'literal type inference'.",
+    'I used the existingConceptFinder tool to check for existing concepts in the store.',
+    'No existing concepts were found, so I added all the extracted concepts to the store.'
   ],
   findings: [
     'as const',
-    'literal type inference',
-    'read-only properties',
+    'literal types',
     'ButtonAttributes',
     'modifyButton function',
-    'buttonAttributes object',
-    'modifyButtons function',
-    'buttonsToChange array'
+    'type property',
+    'read-only',
+    'literal type inference'
   ]
 }
 ```
