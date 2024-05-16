@@ -1,32 +1,27 @@
 import { AgentExecutor, createReactAgent, createToolCallingAgent } from "langchain/agents"
-import { AgentType } from "../agent_specifiers/index.js"
 import { Runnable } from "@langchain/core/runnables"
-import { BaseChatModel } from "langchain/chat_models/base"
-import { BindableNerd } from "../types.js"
+import { BaseChatModel } from "@langchain/core/language_models/chat_models"
+import { BoundNerd } from "../types.js"
 import { NerdOutput } from "../parsers/index.js"
+import { BaseLanguageModelInterface } from "langchain/base_language"
+import { StructuredToolInterface } from "@langchain/core/tools"
+import { ChatPromptTemplate } from "langchain/prompts"
 
-export const createRunner = async (nerd: BindableNerd<NerdOutput>, llm: BaseChatModel): Promise<Runnable> => {
-  let output;
-
-  if (nerd.agent_specifier.agent_type === AgentType.SimpleAgent) {
-    output = nerd.prompt.pipe(llm)
+export const createRunner = async (nerd: BoundNerd<NerdOutput>, llm: BaseChatModel | BaseLanguageModelInterface): Promise<Runnable> => {
+  if (!nerd.tools || nerd.tools.length === 0) {
+    return nerd.prompt.pipe(llm)
   }
 
-  if (nerd.agent_specifier.agent_type === AgentType.ToolCallingAgent) {
-    const tools = nerd.tools
-    const prompt = nerd.prompt
-    const agent = await createToolCallingAgent({ tools, prompt, llm })
-    const executor = new AgentExecutor({ agent, tools })
-    output = executor;
-  }
+  const tools = nerd.tools
+  const prompt = nerd.prompt
+  const agent = await createAgent(tools, prompt, llm)
+  return new AgentExecutor({ agent, tools })
+}
 
-  if (nerd.agent_specifier.agent_type === AgentType.ReactAgent) {
-    const tools = nerd.tools
-    const prompt = nerd.prompt
-    const agent = await createReactAgent({ tools, prompt, llm })
-    const executor = new AgentExecutor({ agent, tools })
-    output = executor;
+const createAgent = async (tools: StructuredToolInterface[], prompt: ChatPromptTemplate, llm: BaseChatModel | BaseLanguageModelInterface): Promise<Runnable> => {
+  if (llm instanceof BaseChatModel && llm.bindTools) {
+    return await createToolCallingAgent({ tools, prompt, llm })
+  } else {
+    return await createReactAgent({ tools, prompt, llm })
   }
-
-  return output;
 }

@@ -28,4 +28,4 @@ When proposing a given revision, start with confidence = 1 and penalize that val
   as_tool_description: "This tool proposes revisions that seek to improve the quality of codefenced code-snippets in markdown technical documentation.",
 }
 
-export const CodeSnippetTunerNerd = await buildRevisionNerd(nerd_opts)
+export const codeSnippetTunerNerd = buildRevisionNerd(nerd_opts)

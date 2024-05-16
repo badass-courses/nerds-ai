@@ -22,4 +22,4 @@ When proposing a given revision, start with confidence = 1 and penalize that val
   as_tool_description: "This tool proposes revisions that seek to add specified flavor and personality to the text. Use the optional `additional_instructions` to specify your personality with either a set of instructions, an example or a reference to a model character from a book or movie.",
 }
 
-export const PersonalityNerd = await buildRevisionNerd(nerd_opts)
+export const personalityNerd = buildRevisionNerd(nerd_opts)

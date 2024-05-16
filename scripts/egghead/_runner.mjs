@@ -13,6 +13,10 @@ export const run_against_egghead_files = async (
   const writedir = `${output_directory}/${nerd.name}/${Date.now()}`;
   mkdirSync(writedir, { recursive: true });
 
+  const bound_to_gpt = await nerd.bindToModel('gpt-4o');
+  const bound_to_claude = await nerd.bindToModel('claudeclaude-3-opus-20240229');
+  const bound_to_gemini = await nerd.bindToModel('gemini-1.5-pro-latest');
+
   console.log(
     `  Now running \`${nerd.name}\` against our sample egghead documents.`,
   );
@@ -22,9 +26,9 @@ export const run_against_egghead_files = async (
       nerd.name,
       additional_instructions,
       {
-        invoke_gpt: nerd.with_openai?.invoke,
-        invoke_anthropic: nerd.with_anthropic?.invoke,
-        invoke_gemini: nerd.with_gemini?.invoke,
+        invoke_gpt: bound_to_gpt.invoke,
+        invoke_anthropic: bound_to_claude.invoke,
+        invoke_gemini: bound_to_gemini.invoke,
       },
     );
     const path = `${writedir}/${file}`;

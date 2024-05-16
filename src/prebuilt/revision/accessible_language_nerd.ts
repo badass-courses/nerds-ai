@@ -27,4 +27,4 @@ When proposing a given revision, start with confidence = 1 and penalize that val
   as_tool_description: "This tool proposes revisions that reduce the legibility and accessibility of a given text.",
 }
 
-export const AccessibleLanguageNerd = await buildRevisionNerd(nerd_opts)
+export const accessibleLanguageNerd = buildRevisionNerd(nerd_opts)

@@ -1,7 +1,7 @@
 import { BaseOutputParser } from '@langchain/core/output_parsers';
 
 export type NerdOutput = string | {
-  chain_of_thought: string[],
+  thought_log: string[],
 }
 
 export type NerdOutputType = "string" | "json"

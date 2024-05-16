@@ -4,11 +4,11 @@ import { NerdOutputParser, NerdOutput } from "../index.js";
 export class JsonNerdOutputParser<T extends NerdOutput> extends NerdOutputParser<T> {
   format_instructions: string = `Please return your output in compliance with the JSON schema below.
 
-Note that your output has space for a "chain of thought" array of strings. To populate this array, you should think deeply about the task at hand.
+Note that your output has space for a "thought_log" array of strings. To populate this array, you should think deeply about the task at hand.
 Ask yourself "What should I do next? Why?" and then answer that question as specifically as you can.
-Repeat this process as you go about your task, making sure to document your thoughts in the "chain_of_thought" array.
+Repeat this process as you go about your task, making sure to document your thoughts in the "thought_log" array.
 
-Your final response, including the chain of thought, should be a single JSON object that implements the typescript type defined below.
+Your final response, including the log of your thoughts, should be a single JSON object that implements the typescript type defined below.
 Please DO NOT wrap your response in any kind of text or code fence, it is essential that you return valid JSON that is machine parsable.
 The first character of your output MUST be '{' and the last character MUST be '}', and the entire content should be a properly-escaped JSON object. 
 

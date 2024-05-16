@@ -1,6 +1,6 @@
 import { buildFindingsNerd } from "./index.js"
 import { Pinecone } from "@pinecone-database/pinecone"
-import { BoundNerd } from "../../nerd_builder/types.js";
+import { BindableNerd } from "../../nerd_builder/types.js";
 import { Findings } from "./wikipedia_research_nerd.js";
 import { ConceptToolkit } from "../../tools/pinecone_tools.js"
 export { Findings } from "../../nerd_builder/parsers/json/findings.js"
@@ -14,9 +14,9 @@ type ConceptNerdConfig = {
   domain: string
 }
 
-type ConceptNerdBuilder = (pineconeConfig: PineconeConfig, nerdConfig: ConceptNerdConfig) => Promise<BoundNerd<Findings>>
+type ConceptNerdBuilder = (pineconeConfig: PineconeConfig, nerdConfig: ConceptNerdConfig) => BindableNerd<Findings>
 
-export const buildPineconeBackedConceptNerd: ConceptNerdBuilder = async (pineconeConfig: PineconeConfig, nerdConfig: ConceptNerdConfig) => {
+export const buildPineconeBackedConceptNerd: ConceptNerdBuilder = (pineconeConfig: PineconeConfig, nerdConfig: ConceptNerdConfig) => {
 
   const pinecone_api_key = pineconeConfig.api_key || process.env.PINECONE_API_KEY
   const pinecone_index_name = pineconeConfig.index_name || process.env.PINECONE_INDEX_NAME
@@ -56,5 +56,5 @@ export const buildPineconeBackedConceptNerd: ConceptNerdBuilder = async (pinecon
     tools: toolkit.getTools()
   }
 
-  return await buildFindingsNerd(nerd_opts)
+  return buildFindingsNerd(nerd_opts)
 }
