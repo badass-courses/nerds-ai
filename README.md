@@ -24,7 +24,7 @@ A nerd can be defined independently of any LLMs, and then bound to different LLM
 
 ### BaseNerd<T>
 
-At its core a nerd is an object that defines what the LLM does and how. This is mostly used to implement the system message, and contains a few parameterizable things. The `parser` and `agent_specifier` come into play when binding the nerd to an LLM for actual execution, see below.
+At its core a nerd is an object that defines what the LLM does and how. This is mostly used to implement the system message, and contains a few parameterizable things.
 
 ```typescript
 export type BaseNerd<T extends NerdOutput> = {
@@ -47,21 +47,18 @@ export type BaseNerd<T extends NerdOutput> = {
   additional_notes?: string;
 
   // Nerds have the option to use Tools to help them accomplish their goals. This is a list of tools that the nerd can use.
+  // If the model you bind to supports tool calling, great! If not we'll do our best to coerce tool support by inserting ReAct instructions
+  // into the prompt and passing it to a ReAct agent for execution.
   tools?: StructuredToolInterface[];
 
   // The output parser is primarily used to convert the string output of the LLM into a structured object of a given type.
   parser: NerdOutputParser<T>;
-
-  // This abstraction needs to be cleaned up a bit, but right now this tells the nerd whether it's just a simple chat model (SIMPLE_AGENT) or a tool-calling agent (TOOL_CALLING_AGENT), and there are various ramifications for internal flows based on this.
-  agent_specifier: AgentSpecifier;
 };
 ```
 
 ### One Nerd To Bring Them All and In The Darkness Bind Them
 
-Once you have a BaseNerd you can bind it to an LLM. Currently out of the box this library supports OpenAI, Anthropic and Google LLMs. The `NerdPlatformBinder` class exposes a `.bindToPlatform(platform, platform_opts?)` method which returns the invocable nerd object that's ready to use.
-
-Depending on the output parser specified and which agent_specifier you're using the binding operation will make a bunch of configuration choices and serve up an invocable object that looks like this:
+Once you have a BaseNerd you can bind it to an LLM. If you're using the `Nerd` class (`const nerd = new Nerd(params)`), you can invoke `await nerd.bindToModel(model)` to get a `BoundNerd` which you can execute.
 
 ```typescript
 type BoundNerd<T extends NerdOutput> = {
