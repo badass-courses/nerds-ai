@@ -1,10 +1,13 @@
 # nerds-ai
+
 This repo contains a suite of "nerds", which are abstractions around various LLM flows. A nerd is specific, easily defined, and composable as a tool so it can be passed either to other nerds or to general tool-calling agents. The goal is to make it easy to build and test new LLM flows by providing a set of building blocks that can be easily combined and tested.
 
 This repo contains a variety of [prebuilt nerds](./src/prebuilt) that can be used directly, or which can be used as examples for building new nerds.
 
 ## Setup
+
 You should define your environment variables to contain the following as specified in `.env.template`. The current implementation simply expects all of this stuff to be in your .env, and may through errors if you try to perform a flow that requires one of these variables without having it defined:
+
 ```bash
 GOOGLE_API_KEY="REPLACE_ME"
 ANTHROPIC_API_KEY="REPLACE_ME"
@@ -16,43 +19,46 @@ PINECONE_INDEX_NAME="REPLACE_ME"
 ```
 
 ## Creating Nerds
+
 A nerd can be defined independently of any LLMs, and then bound to different LLMs for execution. We first create a nerd by implementing the `BaseNerd` type, and then we `bind` that nerd to one or more LLMs for execution.
 
 ### BaseNerd<T>
+
 At its core a nerd is an object that defines what the LLM does and how. This is mostly used to implement the system message, and contains a few parameterizable things. The `parser` and `agent_specifier` come into play when binding the nerd to an LLM for actual execution, see below.
 
 ```typescript
 export type BaseNerd<T extends NerdOutput> = {
   // the name of the nerd
-  name: string
+  name: string;
 
   // a concise and direct summary of the nerd's purpose
-  purpose: string
+  purpose: string;
 
   // a set of things that the nerd should actively seek to do as it runs
-  do_list: string[]
+  do_list: string[];
 
   // a set of things that the nerd should avoid doing as it runs
-  do_not_list: string[]
+  do_not_list: string[];
 
   // when the nerd is wrapped as a tool, how is that tool described?
-  as_tool_description: string
+  as_tool_description: string;
 
   // this is a wildcard field to include additional instructions to the nerd that are not covered by the above fields
-  additional_notes?: string
+  additional_notes?: string;
 
   // Nerds have the option to use Tools to help them accomplish their goals. This is a list of tools that the nerd can use.
-  tools?: StructuredToolInterface[],
+  tools?: StructuredToolInterface[];
 
   // The output parser is primarily used to convert the string output of the LLM into a structured object of a given type.
-  parser: NerdOutputParser<T>,
+  parser: NerdOutputParser<T>;
 
   // This abstraction needs to be cleaned up a bit, but right now this tells the nerd whether it's just a simple chat model (SIMPLE_AGENT) or a tool-calling agent (TOOL_CALLING_AGENT), and there are various ramifications for internal flows based on this.
-  agent_specifier: AgentSpecifier
-}
+  agent_specifier: AgentSpecifier;
+};
 ```
 
 ### One Nerd To Bring Them All and In The Darkness Bind Them
+
 Once you have a BaseNerd you can bind it to an LLM. Currently out of the box this library supports OpenAI, Anthropic and Google LLMs. The `NerdPlatformBinder` class exposes a `.bindToPlatform(platform, platform_opts?)` method which returns the invocable nerd object that's ready to use.
 
 Depending on the output parser specified and which agent_specifier you're using the binding operation will make a bunch of configuration choices and serve up an invocable object that looks like this:
@@ -60,47 +66,52 @@ Depending on the output parser specified and which agent_specifier you're using 
 ```typescript
 type BoundNerd<T extends NerdOutput> = {
   // this is a reference to the underlying BaseNerd object
-  nerd: BaseNerd<T>,
+  nerd: BaseNerd<T>;
 
   // this method will return a structured object of the type specified in the BaseNerd object
-  invoke: (input: string, runtime_instructions:string ) => Promise<T>,
+  invoke: (input: string, runtime_instructions: string) => Promise<T>;
 
   // this method will return a raw string output from the LLM. When using a nerd as a tool it's necessary to pass a string back into the invoking flow,
   // so this method gives us a way to do that.
-  invoke_raw: (input: string, runtime_instructions) => Promise<string>,
-  
+  invoke_raw: (input: string, runtime_instructions) => Promise<string>;
+
   // this is a wrapped version of the nerd - it implements the `invoke_raw` method and specifies the tool description and input schema.
-  tool: StructuredToolInterface
-}
+  tool: StructuredToolInterface;
+};
 ```
 
 ### Nerd Output
+
 Fundamentally there are two kinds of nerds - those that return structured JSON objects and those that return markdown strings. In either case, a nerd's output will generally specify a "chain of thought" as well as its actual final output. There are various kinds of JSON Nerd Outputs out there - the prebuilt nerds have a simple `Findings` output type which simply returns an array of strings, and a more complex `ProposedRevisions` output type which returns some structured data whose purpose is to allow a user to build an interface where they can accept or reject proposed revisions to a text.
 
 ## Project Next Steps
+
 I've got a lot of things I'd like to add to this project, here is a general list:
 
-* [ ] Add chat memory and conversational context to the nerds so they're not just one-and-done if you don't want them to be.
-* [ ] Building on the ConceptExtraction model with vector-store based canonical concepts, I want to build a graph data extractor. The idea would be to extract a graph of concepts from a given text, and then use that graph to build a structured JSON object that represents the relationships between those concepts and persist it in something like Nebula. This graph can then be used via a RAG flow to feed into other nerds.
-* [x] Add input pre-processors so that nerds can do things like insert line-number annotations and other things to their input prior to running them.
-* [ ] Make `agent_specifier` completely internal. In practice every decision it makes should be able to be automated based on e.g. whether or not the nerd is using tools, and which platform we're running against.
-* [ ] Create a `DynamicToolNerd` which is designed to allow users to implement tools with specific signatures at runtime. This way we could e.g. implement a ConceptStore nerd that has its own bespoke database accessors that e.g. perform I/O against a dynamically defined pinecone index and also allow writes to a separate K/V store that actually tracks concepts, etc.
-* [ ] LangChain exposes an experimental AutoGPT feature. I haven't dug too deeply into this yet, but I think that I can swing this in a way that would allow me to build an "AutoNerd" that has access to the full suite of nerds as well as the capacity implement entirely new nerds as it runs. This could then become the "Digital Gardener" we've talked about, constantly running against the entire suite of content and proposing revisions constantly over time without needing to be invoked directly.
+- [ ] Add chat memory and conversational context to the nerds so they're not just one-and-done if you don't want them to be.
+- [ ] Building on the ConceptExtraction model with vector-store based canonical concepts, I want to build a graph data extractor. The idea would be to extract a graph of concepts from a given text, and then use that graph to build a structured JSON object that represents the relationships between those concepts and persist it in something like Nebula. This graph can then be used via a RAG flow to feed into other nerds.
+- [x] Add input pre-processors so that nerds can do things like insert line-number annotations and other things to their input prior to running them.
+- [x] Make `agent_specifier` completely internal. In practice every decision it makes should be able to be automated based on e.g. whether or not the nerd is using tools, and which platform we're running against.
+- [ ] Create a `DynamicToolNerd` which is designed to allow users to implement tools with specific signatures at runtime. This way we could e.g. implement a ConceptStore nerd that has its own bespoke database accessors that e.g. perform I/O against a dynamically defined pinecone index and also allow writes to a separate K/V store that actually tracks concepts, etc.
+- [ ] LangChain exposes an experimental AutoGPT feature. I haven't dug too deeply into this yet, but I think that I can swing this in a way that would allow me to build an "AutoNerd" that has access to the full suite of nerds as well as the capacity implement entirely new nerds as it runs. This could then become the "Digital Gardener" we've talked about, constantly running against the entire suite of content and proposing revisions constantly over time without needing to be invoked directly.
 
 ## Prebuilt Nerds
+
 This is a running list of prebuilt nerds including sample outputs when run against a document from the egghead source material. The input document is not checked into the repo because those texts are proprietary, I'm happy to share them with other egghead folks if you want to run them yourselves or you can run them against your own stuff.
 
 There are currently two different kinds of nerds - those that return a markdown string and those that return a structured JSON object. The markdown string nerds are generally used for simple tasks like summarization, while the structured JSON nerds are used for more complex tasks like proposing revisions to a text. The prebuilt nerds are currently all built to return JSON.
 
 There are currently two JSON output types defined. Both return an object with a `thought_log` string array as well as a typed payload.
-* `Findings` - A Findings nerd is really straightforward. It simply returns an array of strings that represent the findings of the nerd. This is useful to prepare concise input to other nerds, for instance.
-* `Revisions` - A Revisions nerd is a bit more ambitious. Given some text input, it returns a list of proposed revisions to that text. The idea is that a user can then accept/reject those revisions via some user interface, seamlessly mutating the text.
+
+- `Findings` - A Findings nerd is really straightforward. It simply returns an array of strings that represent the findings of the nerd. This is useful to prepare concise input to other nerds, for instance.
+- `Revisions` - A Revisions nerd is a bit more ambitious. Given some text input, it returns a list of proposed revisions to that text. The idea is that a user can then accept/reject those revisions via some user interface, seamlessly mutating the text.
 
 I've got a number of different kinds of prebuilt nerds that implement these two basic types, and as you can see it's hopefully pretty straightforward to define new ones. The examples you'll find below are all defined in [./scripts/simple](./scripts/simple/) and you can run them yourself if you have the appropriate environment variables defined and can supply text input. Note that we are generating inputs only against OpenAI, but all tools except wiki and content extraction are available for Anthropic and Google as well. The tool-using nerds (wiki and context) require a tool-using LLM, and currently Gemini doesn't support that so they won't work with Gemini, but work fine with Anthropic as well as OpenAI.
 
 **note on revision output**: The `line` field is not at all reliable. I'm going to add an input preprocessor to these nerds that inserts line numbers on every line, and I'm hoping that with that in place the LLM will be able to more accurately identify the line on which a given revision should be made.
 
 ### Prebuilt Revision Nerd: AccessibleLanguageNerd
+
 This nerd takes a text input and returns a list of proposed revisions to make the text more accessible. This is a good example of a nerd that returns a `Revisions` object. The [definition](./src/prebuilt/revision/accessible_language_nerd.ts) is straightforward and easily tunable. The output you'll receive looks like this:
 
 ```typescript
@@ -129,7 +140,7 @@ This nerd takes a text input and returns a list of proposed revisions to make th
     },
     {
       line_number: 7,
-      existing_text: 'The `modifyButton` function accepts an `attributes` object typed as `ButtonAttributes`, which has `type` values of "button," "submit," or "reset".',  
+      existing_text: 'The `modifyButton` function accepts an `attributes` object typed as `ButtonAttributes`, which has `type` values of "button," "submit," or "reset".',
       proposed_replacement: 'The `modifyButton` function takes an `attributes` object of type `ButtonAttributes`, which specifies the `type` as either "button", "submit", or "reset".',
       reasoning: "Simplifying 'accepts' to 'takes' and rephrasing the description of `type` values makes the sentence clearer and more direct.",
       confidence: 0.9
@@ -160,6 +171,7 @@ This nerd takes a text input and returns a list of proposed revisions to make th
 ```
 
 ### Prebuilt Revision Nerd: CodeSnippetTunerNerd
+
 This one is a bit tricky because we're running it against source texts that sometimes include intentionally incorrect code snippets. I've attempted to account for that. The goal here is to improve any code snippets found in a source text, where "improve" is defined fairly broadly. The [definition](./src/prebuilt/revision/code_snippet_tuner_nerd.ts) is here and we can continue to tweak it. The output you'll receive looks like this:
 
 ```typescript
@@ -192,6 +204,7 @@ This one is a bit tricky because we're running it against source texts that some
 ```
 
 ### Prebuilt Revision Nerd: PersonalityNerd
+
 This one is more playful, but potentially useful if you want to tweak the tone of a given text. Basically you invoke it by passing in a personality defined in some way. The nerd proposes edits to make it feel as if the document was written by someone with the given personality. It makes use of the second optional input argumennt, "runtime_instructions", to allow you to specify the personality at runtime. If you forget you'll get Deadpool and he'll use fourth-wall violations to remind you to parameterize the nerd. The [definition is here](./src/prebuilt/revision/personality_nerd.ts) and the output looks like this - the personality I specified was "a klingon warrior who is getting flustered as he attempts to write technical documentation accessible to human engineers":
 
 ```typescript
@@ -240,6 +253,7 @@ This one is more playful, but potentially useful if you want to tweak the tone o
 ```
 
 ### Prebuilt Revision Nerd: TypoNerd
+
 This one is very basic, it just seeks to identify typos in a given text. Honestly this is probably not the best use of LLMs since we already have spellcheck, but it was trivial to throw together and test so here we are. Definition is [here](./src/prebuilt/revision/typo_nerd.ts) and sample output is here:
 
 ```typescript
@@ -279,6 +293,7 @@ This one is very basic, it just seeks to identify typos in a given text. Honestl
 ```
 
 ### Prebuilt Findings Nerd: WikipediaResearchNerd
+
 This is more of a demo of using tools than a functionally useful nerd itself. This nerd is instructed to have ADHD and go down a wikipedia rabbit hole researching a given prompt, so the result can be a bit random. I used "Danny Greene", the Rasputin of Cleveland mob politics, as my initial prompt. Unlike the revisions nerds above, a Findings nerd just returns a list of findings. The source is [here](./src/prebuilt/findings/wikipedia_research_nerd.ts) and the output looks like this:
 
 ```typescript
@@ -300,6 +315,7 @@ This is more of a demo of using tools than a functionally useful nerd itself. Th
 ```
 
 ### Prebuilt Findings Nerd: ConceptExtractorNerd
+
 This is the most complex nerd yet. It's wired up to a pinecone backend. You give it a content domain and it seeks to extract concepts related to that domain from a given text. Instead of just returning the concepts, though, first it checks them against a vector store that contains a list of canonical concepts. If an existing concept would suffice instead of an extracted one it replaces the initial suggestion with the canonical one. Then it writes all new concepts to the concept store and returns the final list. The source is [here](./src/prebuilt/findings/vector_backed_concept_nerd.ts) and the result looks like this. All returned concepts are in pinecone, too.
 
 **note**: in practice we probably don't want the nerd to write to pinecone, that should be a separate step. But I wanted to make sure that it could, as much for proof-of-concept reasons as anything else. This all works as described.
