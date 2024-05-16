@@ -82,7 +82,7 @@ I've got a lot of things I'd like to add to this project, here is a general list
 
 * [ ] Add chat memory and conversational context to the nerds so they're not just one-and-done if you don't want them to be.
 * [ ] Building on the ConceptExtraction model with vector-store based canonical concepts, I want to build a graph data extractor. The idea would be to extract a graph of concepts from a given text, and then use that graph to build a structured JSON object that represents the relationships between those concepts and persist it in something like Nebula. This graph can then be used via a RAG flow to feed into other nerds.
-* [ ] Add input pre-processors so that nerds can do things like insert line-number annotations and other things to their input prior to running them.
+* [x] Add input pre-processors so that nerds can do things like insert line-number annotations and other things to their input prior to running them.
 * [ ] Make `agent_specifier` completely internal. In practice every decision it makes should be able to be automated based on e.g. whether or not the nerd is using tools, and which platform we're running against.
 * [ ] Create a `DynamicToolNerd` which is designed to allow users to implement tools with specific signatures at runtime. This way we could e.g. implement a ConceptStore nerd that has its own bespoke database accessors that e.g. perform I/O against a dynamically defined pinecone index and also allow writes to a separate K/V store that actually tracks concepts, etc.
 * [ ] LangChain exposes an experimental AutoGPT feature. I haven't dug too deeply into this yet, but I think that I can swing this in a way that would allow me to build an "AutoNerd" that has access to the full suite of nerds as well as the capacity implement entirely new nerds as it runs. This could then become the "Digital Gardener" we've talked about, constantly running against the entire suite of content and proposing revisions constantly over time without needing to be invoked directly.
@@ -92,7 +92,7 @@ This is a running list of prebuilt nerds including sample outputs when run again
 
 There are currently two different kinds of nerds - those that return a markdown string and those that return a structured JSON object. The markdown string nerds are generally used for simple tasks like summarization, while the structured JSON nerds are used for more complex tasks like proposing revisions to a text. The prebuilt nerds are currently all built to return JSON.
 
-There are currently two JSON output types defined. Both return an object with a `chain_of_thought` string array as well as a typed payload.
+There are currently two JSON output types defined. Both return an object with a `thought_log` string array as well as a typed payload.
 * `Findings` - A Findings nerd is really straightforward. It simply returns an array of strings that represent the findings of the nerd. This is useful to prepare concise input to other nerds, for instance.
 * `Revisions` - A Revisions nerd is a bit more ambitious. Given some text input, it returns a list of proposed revisions to that text. The idea is that a user can then accept/reject those revisions via some user interface, seamlessly mutating the text.
 
@@ -105,7 +105,7 @@ This nerd takes a text input and returns a list of proposed revisions to make th
 
 ```typescript
 {
-  chain_of_thought: [
+  thought_log: [
     "First, I'll review the text for clarity and readability, focusing on simplifying complex sentences and ensuring the technical content remains precise.",
     "The title and description seem clear, but I'll check if they can be made more concise or if any technical jargon can be simplified without losing meaning.",
     "In the main content, I'll look for any overly complex sentences or awkward wording that could be simplified to make the text more accessible to readers who might not be familiar with TypeScript or programming concepts.",
@@ -164,7 +164,7 @@ This one is a bit tricky because we're running it against source texts that some
 
 ```typescript
 {
-  chain_of_thought: [
+  thought_log: [
     "First, I'll check the code snippets for syntax errors or inconsistencies.",
     "In the TypeScript code snippet where 'buttonAttributes' is defined, there's a syntax error with the use of a semicolon instead of a comma in the object definition. This needs to be corrected to a comma for proper object syntax.",
     "Next, I'll verify if the use of 'as const' is correctly demonstrated and if the comments in the code snippets align with the expected behavior of TypeScript.",
@@ -196,7 +196,7 @@ This one is more playful, but potentially useful if you want to tweak the tone o
 
 ```typescript
 {
-  chain_of_thought: [
+  thought_log: [
     'First, I need to channel a Klingon warrior who is trying to write technical documentation for human engineers. Klingons are known for their directness and might use a more commanding tone, even when flustered. They might also express frustration or confusion in a straightforward manner.',
     "The document is about TypeScript's 'as const' feature. I need to ensure that the technical content remains accurate while infusing the personality of a flustered Klingon warrior.",
     "I'll look for opportunities to make the language more direct and possibly include expressions of frustration or challenge, which would be characteristic of a Klingon struggling with the task.",
@@ -244,7 +244,7 @@ This one is very basic, it just seeks to identify typos in a given text. Honestl
 
 ```typescript
 {
-  chain_of_thought: [
+  thought_log: [
     "First, I'll check for any typographical errors such as misspellings or incorrect punctuation.",
     'I noticed that in the TypeScript code snippets, semicolons are used instead of commas in object definitions. This is a syntax error in TypeScript and should be corrected to commas.',
     "I'll propose edits to replace the semicolons with commas in the object definitions to ensure the code is syntactically correct."
@@ -283,7 +283,7 @@ This is more of a demo of using tools than a functionally useful nerd itself. Th
 
 ```typescript
 {
-  chain_of_thought: [
+  thought_log: [
     'First, I looked up Danny Greene to understand his background and significance. I found that he was an American mobster in Cleveland, Ohio, involved in a conflict with the Cleveland crime family which led to his assassination.',
     'Next, I explored the Cleveland Mafia War to see how it connected with Danny Greene. This provided context on the violent struggles within the Cleveland crime family and how Greene attempted to take over criminal rackets in the city.',
     "I then delved deeper into Greene's personal history, discovering his challenging early life, his rise through the ranks of the International Longshoremen's Association, and his eventual leadership in organized crime.",
@@ -306,7 +306,7 @@ This is the most complex nerd yet. It's wired up to a pinecone backend. You give
 
 ```typescript
 {
-  chain_of_thought: [
+  thought_log: [
     "First, I need to extract relevant concepts from the provided text. The text discusses TypeScript features, specifically focusing on 'as const' and its usage in type inference and object immutability.",
     "Identified concepts include: 'as const', 'literal type inference', 'read-only properties', 'ButtonAttributes', 'modifyButton function', 'buttonAttributes object', 'modifyButtons function', 'buttonsToChange array'.",
     'Next, I will use the existingConceptFinder tool to check if any of these concepts already exist in the store or if there are similar concepts that could be used instead.',

@@ -28,4 +28,4 @@ When proposing a given revision, start with confidence = 1 and penalize that val
   as_tool_description: "This tool proposes corrections to typos and similar small mechanical errors in a given text.",
 }
 
-export const TypoNerd = await buildRevisionNerd(nerd_opts)
+export const typoNerd = buildRevisionNerd(nerd_opts)

@@ -26,4 +26,4 @@ const nerd_opts = {
   tools: [wikipediaTool]
 }
 
-export const WikipediaResearchNerd = await buildFindingsNerd(nerd_opts)
+export const wikipediaResearchNerd = buildFindingsNerd(nerd_opts)

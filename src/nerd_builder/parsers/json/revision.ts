@@ -2,10 +2,10 @@ import { NerdOutput } from "../index.js"
 import { JsonNerdOutputParser } from "./index.js"
 
 export const schema = `{
-  // the "chain_of_thought" array is for tracking your own thoughts as you carry out your task. 
+  // the "thought_log" array is for tracking your own thoughts as you carry out your task.
   // Please log your process and observations here as you go, ensuring to keep your thoughts in order.
   // Use these thoughts as you complete your task to help you stay focused.
-  "chain_of_thought": string[],
+  "thought_log": string[],
 
   // return as many proposed edits as you can so long as you are confident that they serve the needs of the operation requested.
   "proposed_edits": [{
@@ -33,7 +33,6 @@ export const schema = `{
 }`
 
 export type ProposedRevisions = NerdOutput & {
-  thoughts: string[],
   proposed_edits: {
     line_number: number
     existing_text: string
