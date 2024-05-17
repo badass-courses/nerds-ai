@@ -1,4 +1,4 @@
-import { Nerd } from "../../main.js"
+import { Nerd } from "../../nerd.js"
 import { findings_parser, Findings } from "../../internals/parsers/json/findings.js"
 import { BaseNerdOptions, BindableNerd } from "../../internals/types.js"
 

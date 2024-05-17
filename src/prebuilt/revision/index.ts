@@ -1,4 +1,4 @@
-import { Nerd } from "../../main.js"
+import { Nerd } from "../../nerd.js"
 import { line_number_inserter } from "../../internals/input_preprocessors/line_number_inserter.js"
 import { revision_parser, ProposedRevisions } from "../../internals/parsers/json/revision.js"
 import { BaseNerdOptions, BindableNerd } from "../../internals/types.js"

@@ -1,8 +1,12 @@
 {
   "name": "nerds-ai",
   "version": "0.0.1",
-  "description": "A suite of LLM-agnostic tools for specailized tasks",
+  "description": "A toolkit for defining LLM-agnostic tool-using tools (nerds) for specailized tasks",
   "type": "module",
+  "author": "Mykola Bilokonsky <mbilokonsky@users.noreply.github.com>",
+  "license": "Apache-2.0",
+  "main": "build/src/main.js",
+  "types": "build/src/main.d.ts",
   "engines": {
     "node": ">= 20.9 < 23"
   },
@@ -33,8 +37,6 @@
     "prettier": "prettier --config .prettierrc --write .",
     "test:watch": "jest --watch"
   },
-  "author": "Mykola Bilokonsky <mbilokonsky@users.noreply.github.com>",
-  "license": "Apache-2.0",
   "dependencies": {
     "@langchain/anthropic": "^0.1.16",
     "@langchain/community": "^0.0.53",

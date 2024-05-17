@@ -6,6 +6,8 @@ This repo contains a variety of [prebuilt nerds](./src/prebuilt) that can be use
 
 ## Setup
 
+### Environment Variables
+
 You should define your environment variables to contain the following as specified in `.env.template`. The current implementation simply expects all of this stuff to be in your .env, and may throw errors if you try to perform a flow that requires one of these variables without having it defined:
 
 ```bash
@@ -18,11 +20,97 @@ PINECONE_ENVIRONMENT="REPLACE_ME"
 PINECONE_INDEX_NAME="REPLACE_ME"
 ```
 
-## Creating Nerds
+### Using Prebuilt Nerds
 
-A nerd can be defined independently of any LLMs, and then bound to different LLMs for execution. We first create a nerd by implementing the `BaseNerd` type, and then we `bind` that nerd to one or more LLMs for execution.
+This library ships with some prebuilt nerds - a list and example output from these nerds is documented below. To run them yourself, set up your environment variables as specified above and then create some javascript/typescript that looks like this:
 
-### BaseNerd<T>
+```typescript
+import 'dotenv/config';
+import { accessibleLanguageNerd } from 'nerds-ai';
+import { inspect } from 'util';
+
+const input_text = `Fourscore and seven years ago our fathers brought forth on this continent, a new nation, conceived in Liberty, and dedicated to the proposition that all men are created equal. Now we are engaged in a great civil war, testing whether that nation, or any nation so conceived and so dedicated, can long endure. We are met on a great battlefield of that war. We have come to dedicate a portion of that field, as a final resting place for those who here gave their lives that that nation might live. It is altogether fitting and proper that we should do this.`;
+
+async function main() {
+  const nerd = await accessibleLanguageNerd.bindToModel('gpt-4o');
+  const result = await nerd.invoke(input_text);
+
+  console.log(inspect(result, false, null, false));
+}
+
+main();
+```
+
+You'll get a response that looks like this:
+
+```json
+{
+  "thought_log": [
+    "First, I need to identify complex words and phrases that can be simplified while preserving the meaning.",
+    "The phrase 'Fourscore and seven years ago' is archaic and can be simplified.",
+    "The term 'conceived in Liberty' can be made clearer.",
+    "The phrase 'dedicated to the proposition that all men are created equal' can be simplified.",
+    "The sentence 'Now we are engaged in a great civil war, testing whether that nation, or any nation so conceived and so dedicated, can long endure.' is quite complex and can be broken down.",
+    "The phrase 'We are met on a great battlefield of that war' can be simplified.",
+    "The sentence 'We have come to dedicate a portion of that field, as a final resting place for those who here gave their lives that that nation might live.' is long and can be broken down.",
+    "The phrase 'It is altogether fitting and proper that we should do this.' can be simplified."
+  ],
+  "proposed_edits": [
+    {
+      "line_number": 1,
+      "existing_text": "Fourscore and seven years ago our fathers brought forth on this continent, a new nation, conceived in Liberty, and dedicated to the proposition that all men are created equal.",
+      "proposed_replacement": "Eighty-seven years ago, our ancestors created a new nation on this continent, based on freedom and the idea that all people are equal.",
+      "reasoning": "Simplifies the archaic language and makes the sentence clearer.",
+      "multiple_matches?": false,
+      "confidence": 0.9
+    },
+    {
+      "line_number": 1,
+      "existing_text": "Now we are engaged in a great civil war, testing whether that nation, or any nation so conceived and so dedicated, can long endure.",
+      "proposed_replacement": "Now we are in a great civil war, testing if that nation, or any nation with such beliefs, can last.",
+      "reasoning": "Breaks down the complex sentence and uses simpler words.",
+      "multiple_matches?": false,
+      "confidence": 0.9
+    },
+    {
+      "line_number": 1,
+      "existing_text": "We are met on a great battlefield of that war.",
+      "proposed_replacement": "We are here on a major battlefield of that war.",
+      "reasoning": "Simplifies the phrase and makes it more direct.",
+      "multiple_matches?": false,
+      "confidence": 0.95
+    },
+    {
+      "line_number": 1,
+      "existing_text": "We have come to dedicate a portion of that field, as a final resting place for those who here gave their lives that that nation might live.",
+      "proposed_replacement": "We have come to set aside part of this field as a final resting place for those who gave their lives so that the nation might live.",
+      "reasoning": "Breaks down the long sentence and uses simpler words.",
+      "multiple_matches?": false,
+      "confidence": 0.9
+    },
+    {
+      "line_number": 1,
+      "existing_text": "It is altogether fitting and proper that we should do this.",
+      "proposed_replacement": "It is right and proper that we do this.",
+      "reasoning": "Simplifies the phrase and makes it more direct.",
+      "multiple_matches?": false,
+      "confidence": 0.95
+    }
+  ]
+}
+```
+
+### Creating Your Own Nerds
+
+A nerd can be defined independently of any LLMs, and then bound to different LLMs for execution. We first create a nerd by instantiating the `Nerd` class, and then we `bind` that nerd to one or more LLMs for execution. For examples, take a look at how the prebuilt nerds are defined in [./src/prebuilt](./src/prebuilt/). Note that I first create a typed nerd definition (like [revision](./src/prebuilt/revision/index.ts) or [findings](./src/prebuilt/findings/index.ts)), and then I use that to implement different nerds that define specific behaviors bound to those structures.
+
+#### Output Parsers - How We Get Typed Output
+
+But, unless you want to reuse the existing `findings` or `proposed_revisions` output schemas, you'll want to create your own custom OutputParser. Take a look at the [existing json output parsers](./src/internals/parsers/json) that the revision and findings nerds import. You can use these as a template to create your own flows, and then you can define nerds that give type-safe output based on your definitions.
+
+Basically you define an output schema type that extends `NerdOutput`, and then you write a plaintext schema definition that reflects your desired structure as a string that gets passed into the prompt, with commentary to tell the LLM how to structure the response. Easier just to copy the examples. By extending `NerdOutput` you are automatically adding a `thought_log` top-level field, and should make sure to include it when you document your schema.
+
+#### BaseNerd<T>
 
 At its core a nerd is an object that defines what the LLM does and how. This is mostly used to implement the system message, and contains a few parameterizable things.
 
@@ -56,9 +144,9 @@ export type BaseNerd<T extends NerdOutput> = {
 };
 ```
 
-### One Nerd To Bring Them All and In The Darkness Bind Them
+#### Binding Nerds to Models
 
-Once you have a BaseNerd you can bind it to an LLM. If you're using the `Nerd` class (`const nerd = new Nerd(params)`), you can invoke `await nerd.bindToModel(model)` to get a `BoundNerd` which you can execute.
+Once you have a BaseNerd you can bind it to an LLM. If you're using the `Nerd` class (`const nerd = new Nerd(params)`), you can invoke `await nerd.bindToModel(model)` to get a `BoundNerd` which you can execute. The `model` argument in this case can either be the name of a supported model (like `gpt-4o`) or an instance of the NerdModel interface.
 
 ```typescript
 type BoundNerd<T extends NerdOutput> = {
@@ -79,7 +167,7 @@ type BoundNerd<T extends NerdOutput> = {
 
 ### Nerd Output
 
-Fundamentally there are two kinds of nerds - those that return structured JSON objects and those that return markdown strings. In either case, a nerd's output will generally specify a "chain of thought" as well as its actual final output. There are various kinds of JSON Nerd Outputs out there - the prebuilt nerds have a simple `Findings` output type which simply returns an array of strings, and a more complex `ProposedRevisions` output type which returns some structured data whose purpose is to allow a user to build an interface where they can accept or reject proposed revisions to a text.
+Fundamentally there are two kinds of nerds - those that return structured JSON objects and those that return markdown strings. In either case, a nerd's output will generally specify a "thought log" as well as its actual final output. There are various kinds of JSON Nerd Outputs out there - the prebuilt nerds have a simple `Findings` output type which simply returns an array of strings, and a more complex `ProposedRevisions` output type which returns some structured data whose purpose is to allow a user to build an interface where they can accept or reject proposed revisions to a text.
 
 ### A Note on Tool Use
 
