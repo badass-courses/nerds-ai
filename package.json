@@ -39,7 +39,13 @@
     "lint": "eslint ./src --ext .ts --ext .mts",
     "test": "jest --coverage",
     "prettier": "prettier --config .prettierrc --write .",
-    "test:watch": "jest --watch"
+    "test:watch": "jest --watch",
+    "demo:accessible": "node scripts/simple/accessible_language_nerd.mjs",
+    "demo:code": "node scripts/simple/code_snippet_tuner_nerd.mjs",
+    "demo:personality": "node scripts/simple/personality_nerd.mjs",
+    "demo:typo": "node scripts/simple/typo_nerd.mjs",
+    "demo:concepts": "node scripts/simple/concept_extraction_nerd.mjs",
+    "demo:wiki": "node scripts/simple/wikipedia_research_nerd.mjs"
   },
   "dependencies": {
     "@langchain/anthropic": "^0.1.16",

@@ -5,7 +5,9 @@ export class JsonNerdOutputParser<T extends NerdOutput> extends NerdOutputParser
   format_instructions: string = `Please return your output in compliance with the JSON schema below.
 
 Note that your output has space for a "thought_log" array of strings. To populate this array, you should think deeply about the task at hand.
-Ask yourself "What should I do next? Why?" and then answer that question as specifically as you can.
+Ask yourself "What should I do next? Why?" and then answer that question as specifically as you can. Then perform that task, and make note of the output.
+One or more of your steps may involve making use of one of the tools at your disposal - don't be afraid to leverage them to help you complete your task.
+
 Repeat this process as you go about your task, making sure to document your thoughts in the "thought_log" array.
 
 Your final response, including the log of your thoughts, should be a single JSON object that implements the typescript type defined below.

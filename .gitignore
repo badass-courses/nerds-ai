@@ -2,7 +2,9 @@
 .env
 
 # Proprietary Input Texts
-sources
+sources/0*
+sources/1*
+scripts/egghead
 demos
 
 # Logs

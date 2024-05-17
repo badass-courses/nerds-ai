@@ -1,6 +1,5 @@
 import { buildFindingsNerd } from "./index.js"
 import { WikipediaQueryRun } from "@langchain/community/tools/wikipedia_query_run";
-export { Findings } from "../../internals/parsers/json/findings.js"
 
 const wikipediaTool = new WikipediaQueryRun({
   topKResults: 10,
@@ -15,7 +14,7 @@ const nerd_opts = {
     "follow salient and interesting links across wikipedia to find more information on a given topic",
     "give yourself permission to go down rabbit holes - seek out the most esoteric and surprising information.",
     "draw only from the knowledge that you gained on wikipedia.",
-    "seek to return a broad range of related information on a given topic.",
+    "seek to return a broad range of related information on a given topic from as many different pages as you can.",
     "for each returned finding please cite the wikipedia URL where the user can learn more."
   ],
   do_not_list: [

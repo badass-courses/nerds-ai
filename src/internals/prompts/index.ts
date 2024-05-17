@@ -24,10 +24,6 @@ ${additional_notes}
 ${agent_specific_instructions}
 ` : ""
 
-  const specify_scratchpad = (use_scratchpad: boolean): string => use_scratchpad ? `**Agent Scratchpad**
-{agent_scratchpad}
-` : ""
-
   const specify_querytime_instructions = (): string => `**Querytime Instructions**:
 {querytime_instructions}
 `
@@ -41,7 +37,6 @@ ${specify_do_list(nerd.do_list)}
 ${specify_do_not_list(nerd.do_not_list)}
 ${specify_additional_notes(nerd.additional_notes)}
 ${specify_agent_instructions(agent_instructions)}
-${specify_scratchpad(use_scratchpad)}
 ${specify_querytime_instructions()}
 ${specify_output_instructions()}
 
@@ -49,7 +44,13 @@ Please execute your instructions against the text in the next message.`.trim()
 
   const systemMessage = SystemMessagePromptTemplate.fromTemplate(prompt);
   const humanMessage = HumanMessagePromptTemplate.fromTemplate("{input}");
-  return ChatPromptTemplate.fromMessages([systemMessage, humanMessage])
+  const scratchpadPlaceholder: ["placeholder", "{agent_scratchpad}"] = ["placeholder", "{agent_scratchpad}"]
+
+  if (use_scratchpad)
+    return ChatPromptTemplate.fromMessages([systemMessage, humanMessage, scratchpadPlaceholder])
+  else {
+    return ChatPromptTemplate.fromMessages([systemMessage, humanMessage])
+  }
 }
 
 export const ReAct_Prompt_Instruction = `You can use the following tools to help you with this task: {tools}.
@@ -66,11 +67,11 @@ Please use the following strategy iteratively until you've reached a satisfactor
 4. Evaluate the results. If you're happy that the previous action moves you closer to your goal, return to step 1. If you are unhappy with your action, log your reasons as to why, abandon this iteration, and go back to step 1.
 
 Please feel free to use the agent scratchpad to keep track of your thoughts and actions.
-
 {agent_scratchpad}
 
 **VERY IMPORTANT NOTE ON OUTPUT FORMAT**
 **THIS INSTRUCTION SUPERSEDES OUTPUT FORMAT INSTRUCTIONS** 
 Your output format instructions may tell you to output a JSON object. If so, it may instruct you to return output as JSON with no preface or preamble.
-But because of the way we are executing this, you **MUST** preface your final output with the string "Final Answer:", followed by whatever the described output format instructs.
-In this way and only in this way you may ignore the constraints of the output format instructions. Otherwise, you must follow them to the letter.`
+But because of the way we are executing this, you **MUST PREFACE YOUR FINAL OUTPUT** with the string "Final Answer:", followed by whatever the described output format instructs.
+
+This is **NOT OPTIONAL**, the parser we are using will fail to understand your output if you do start your response with the string "Final Answer:".`

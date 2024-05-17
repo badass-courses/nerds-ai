@@ -1,9 +1,7 @@
-import { buildFindingsNerd } from "./index.js"
+import { buildFindingsNerd, Findings } from "./index.js"
 import { Pinecone } from "@pinecone-database/pinecone"
 import { BindableNerd } from "../../internals/types.js";
-import { Findings } from "./wikipedia_research_nerd.js";
 import { ConceptToolkit } from "../../tools/pinecone_tools.js"
-export { Findings } from "../../internals/parsers/json/findings.js"
 
 type PineconeConfig = {
   api_key?: string,

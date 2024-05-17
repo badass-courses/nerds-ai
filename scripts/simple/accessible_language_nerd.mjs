@@ -1,19 +1,16 @@
 import 'dotenv/config';
-import { accessibleLanguageNerd } from '../../build/src/prebuilt/index.js';
+import { accessibleLanguageNerd as nerd } from '../../build/src/prebuilt/index.js';
 import { readFileSync } from 'fs';
-import { inspect } from 'util';
+import { run, log } from './_runner.mjs';
 
-const text = readFileSync(
-  './sources/107-as-const-can-make-strings-infer-as-their-literals-in-objects.md',
-  'utf-8',
-);
+const text = readFileSync('./sources/gettysburg_address.md', 'utf-8');
 
 const main = async () => {
-  const bound = await accessibleLanguageNerd.bindToModel(
-    'gemini-1.5-pro-latest',
-  );
-  const output = await bound.invoke(text);
-  console.log(inspect(output));
+  const { gpt_output, claude_output, gemini_output } = await run(nerd, text);
+
+  log('gpt-4o', gpt_output);
+  log('claude-3-opus-20240229', claude_output);
+  log('gemini-1.5-pro-latest', gemini_output);
 };
 
 main();

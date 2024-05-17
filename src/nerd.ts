@@ -98,7 +98,7 @@ class NerdBinding<T extends NerdOutput> extends NerdBase<T> implements BoundNerd
     }
 
     // if we're using tools, but the model doesn't bind tools, we need to include tool names in the prompt for the ReactAgent.
-    return constructPromptTemplate(this, true, ReAct_Prompt_Instruction)
+    return constructPromptTemplate(this, false, ReAct_Prompt_Instruction)
   }
 
   private async construct_runner(): Promise<Runnable> {
