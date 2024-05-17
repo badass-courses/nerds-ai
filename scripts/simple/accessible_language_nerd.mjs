@@ -9,7 +9,9 @@ const text = readFileSync(
 );
 
 const main = async () => {
-  const bound = await accessibleLanguageNerd.bindToModel('gpt-4o');
+  const bound = await accessibleLanguageNerd.bindToModel(
+    'gemini-1.5-pro-latest',
+  );
   const output = await bound.invoke(text);
   console.log(inspect(output));
 };

@@ -12,7 +12,7 @@ const nerd = await buildPineconeBackedConceptNerd(
   { domain: 'Technical Training Material in Typescript' },
 );
 const main = async () => {
-  const bound = await nerd.bindToModel('gpt-4o');
+  const bound = await nerd.bindToModel('gemini-1.5-pro-latest');
   const output = await bound.invoke(text);
   console.log(inspect(output));
 };

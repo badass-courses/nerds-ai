@@ -1,8 +1,8 @@
-import { ChatPromptTemplate } from "@langchain/core/prompts";
+import { ChatPromptTemplate, SystemMessagePromptTemplate, HumanMessagePromptTemplate } from "@langchain/core/prompts";
 import { NerdOutput } from "../parsers/index.js";
 import { BaseNerd } from "../types.js";
 
-export const constructPromptTemplate = <T extends NerdOutput>(nerd: BaseNerd<T>, agent_instructions: string = ""): ChatPromptTemplate => {
+export const constructPromptTemplate = <T extends NerdOutput>(nerd: BaseNerd<T>, use_scratchpad: boolean = false, agent_instructions: string = ""): ChatPromptTemplate => {
   const specify_identity = (name: string, purpose: string): string => `You are ${name}, a NERD (which is a type of automated LLM-driven assistant).
 
 Your purpose: ${purpose}
@@ -24,27 +24,32 @@ ${additional_notes}
 ${agent_specific_instructions}
 ` : ""
 
+  const specify_scratchpad = (use_scratchpad: boolean): string => use_scratchpad ? `**Agent Scratchpad**
+{agent_scratchpad}
+` : ""
+
   const specify_querytime_instructions = (): string => `**Querytime Instructions**:
-{querytime_instructions}`
+{querytime_instructions}
+`
 
   const specify_output_instructions = (): string => `**Output Instructions**:
-{format_instructions}`
+{format_instructions}
+`
 
   const prompt = `${specify_identity(nerd.name, nerd.purpose)}
 ${specify_do_list(nerd.do_list)}
 ${specify_do_not_list(nerd.do_not_list)}
 ${specify_additional_notes(nerd.additional_notes)}
 ${specify_agent_instructions(agent_instructions)}
+${specify_scratchpad(use_scratchpad)}
 ${specify_querytime_instructions()}
 ${specify_output_instructions()}
 
 Please execute your instructions against the text in the next message.`.trim()
 
-  return ChatPromptTemplate.fromMessages([
-    ["system", prompt],
-    ["human", `{input}`],
-    ["placeholder", "{agent_scratchpad}"]
-  ])
+  const systemMessage = SystemMessagePromptTemplate.fromTemplate(prompt);
+  const humanMessage = HumanMessagePromptTemplate.fromTemplate("{input}");
+  return ChatPromptTemplate.fromMessages([systemMessage, humanMessage])
 }
 
 export const ReAct_Prompt_Instruction = `You can use the following tools to help you with this task: {tools}.
@@ -62,4 +67,10 @@ Please use the following strategy iteratively until you've reached a satisfactor
 
 Please feel free to use the agent scratchpad to keep track of your thoughts and actions.
 
-{agent_scratchpad}`
+{agent_scratchpad}
+
+**VERY IMPORTANT NOTE ON OUTPUT FORMAT**
+**THIS INSTRUCTION SUPERSEDES OUTPUT FORMAT INSTRUCTIONS** 
+Your output format instructions may tell you to output a JSON object. If so, it may instruct you to return output as JSON with no preface or preamble.
+But because of the way we are executing this, you **MUST** preface your final output with the string "Final Answer:", followed by whatever the described output format instructs.
+In this way and only in this way you may ignore the constraints of the output format instructions. Otherwise, you must follow them to the letter.`

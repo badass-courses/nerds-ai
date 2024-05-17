@@ -94,11 +94,11 @@ class NerdBinding<T extends NerdOutput> extends NerdBase<T> implements BoundNerd
 
     // if we're using tools, and the model is a chat model that binds tools, cool.
     if (this.model.llm instanceof BaseChatModel && this.model.llm.bindTools) {
-      return constructPromptTemplate(this)
+      return constructPromptTemplate(this, true)
     }
 
     // if we're using tools, but the model doesn't bind tools, we need to include tool names in the prompt for the ReactAgent.
-    return constructPromptTemplate(this, ReAct_Prompt_Instruction)
+    return constructPromptTemplate(this, true, ReAct_Prompt_Instruction)
   }
 
   private async construct_runner(): Promise<Runnable> {

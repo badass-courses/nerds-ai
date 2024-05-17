@@ -9,7 +9,7 @@ const text = readFileSync(
 );
 
 const main = async () => {
-  const bound = await codeSnippetTunerNerd.bindToModel('gpt-4o');
+  const bound = await codeSnippetTunerNerd.bindToModel('gemini-1.5-pro-latest');
   const output = await bound.invoke(text);
   console.log(inspect(output));
 };

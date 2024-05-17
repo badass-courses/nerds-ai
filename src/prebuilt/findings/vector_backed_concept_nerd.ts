@@ -52,6 +52,7 @@ export const buildPineconeBackedConceptNerd: ConceptNerdBuilder = (pineconeConfi
       "return any concepts that are not either already in the store or which you have not newly added to the store.",
       "include 'duplicates', in other words if you find a match in the store then you should REPLACE the extracted concept with the store concept."
     ],
+    additional_notes: "When passing your list of concepts around be sure to treat them as a JSON array of strings, rather than a single string.",
     as_tool_description: `A tool that extracts tracked, canonical concept names from a given text in the <${nerdConfig.domain}> domain and tracks them in a vector store.`,
     tools: toolkit.getTools()
   }

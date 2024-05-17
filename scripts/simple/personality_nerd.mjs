@@ -9,7 +9,7 @@ const text = readFileSync(
 );
 
 const main = async () => {
-  const bound = await personalityNerd.bindToModel('gpt-4o');
+  const bound = await personalityNerd.bindToModel('gemini-1.5-pro-latest');
   const output = await bound.invoke(
     text,
     'A Klingon warrior getting flustered as he attempts to write accessible technical documentation for human engineers.',
