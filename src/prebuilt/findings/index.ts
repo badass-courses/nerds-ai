@@ -1,6 +1,6 @@
-import { Nerd } from "../../nerd.js"
-import { findings_parser, Findings } from "../../nerd_builder/parsers/json/findings.js"
-import { BaseNerdOptions, BindableNerd } from "../../nerd_builder/types.js"
+import { Nerd } from "../../main.js"
+import { findings_parser, Findings } from "../../internals/parsers/json/findings.js"
+import { BaseNerdOptions, BindableNerd } from "../../internals/types.js"
 
 type FindingsNerdBuilder = (opts: BaseNerdOptions) => BindableNerd<Findings>
 export const buildFindingsNerd: FindingsNerdBuilder = (nerd_opts) => {

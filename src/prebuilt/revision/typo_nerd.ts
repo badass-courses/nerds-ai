@@ -1,5 +1,5 @@
 import { buildRevisionNerd } from "./index.js"
-export { ProposedRevisions } from "../../nerd_builder/parsers/json/revision.js"
+export { ProposedRevisions } from "../../internals/parsers/json/revision.js"
 
 const nerd_opts = {
   name: "TypoNerd",

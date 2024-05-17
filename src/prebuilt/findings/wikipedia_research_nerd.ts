@@ -1,6 +1,6 @@
 import { buildFindingsNerd } from "./index.js"
 import { WikipediaQueryRun } from "@langchain/community/tools/wikipedia_query_run";
-export { Findings } from "../../nerd_builder/parsers/json/findings.js"
+export { Findings } from "../../internals/parsers/json/findings.js"
 
 const wikipediaTool = new WikipediaQueryRun({
   topKResults: 10,

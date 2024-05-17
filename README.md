@@ -6,7 +6,7 @@ This repo contains a variety of [prebuilt nerds](./src/prebuilt) that can be use
 
 ## Setup
 
-You should define your environment variables to contain the following as specified in `.env.template`. The current implementation simply expects all of this stuff to be in your .env, and may through errors if you try to perform a flow that requires one of these variables without having it defined:
+You should define your environment variables to contain the following as specified in `.env.template`. The current implementation simply expects all of this stuff to be in your .env, and may throw errors if you try to perform a flow that requires one of these variables without having it defined:
 
 ```bash
 GOOGLE_API_KEY="REPLACE_ME"
