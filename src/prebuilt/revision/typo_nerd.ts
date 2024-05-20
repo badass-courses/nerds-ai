@@ -1,4 +1,4 @@
-import { buildRevisionNerd } from "./index.js"
+import { RevisionNerd } from "./index.js"
 
 const nerd_opts = {
   name: "TypoNerd",
@@ -19,12 +19,8 @@ const nerd_opts = {
     `return empty objects in the output array. If you have found no typos, return an empty array.`,
     `repeat the same proposed edit more than once, or repeat any edits that have already been rejected.`
   ],
-  additional_notes: `Confidence Guidance:
-When proposing a given revision, start with confidence = 1 and penalize that value as follows to determine the actual confidence level:
-- The text you're replacing may be slang or vernacular and not a mistake (large penalty)
-- The text you're replacing may be a technical term or domain-specific vocabulary (medium penalty)
-- The text you're replacing may be a proper noun and actually correct (small penalty)`,
+  additional_notes: ``,
   as_tool_description: "This tool proposes corrections to typos and similar small mechanical errors in a given text.",
 }
 
-export const typoNerd = buildRevisionNerd(nerd_opts)
+export const typoNerd = new RevisionNerd(nerd_opts)

@@ -1,4 +1,4 @@
-import { buildRevisionNerd } from "./index.js"
+import { RevisionNerd } from "./index.js"
 
 const nerd_opts = {
   name: "AccessibleLanguageNerd",
@@ -14,16 +14,8 @@ const nerd_opts = {
     "propose edits that would make the text less accurate",
     "propose edits that would make the text less precise",
   ],
-  additional_notes: `It's okay if your edit increases verbosity as long as the resulting language is clearer and more accessible.
-  
-Confidence Guidance:
-When proposing a given revision, start with confidence = 1 and penalize that value as follows to determine the actual confidence level:
-- The revision is more verbose than the original text (small penalty)
-- The revision introduces a new concept or term that is not present in the original text (large penalty)
-- The revision is less precise or accurate than the original text (large penalty)
-- The revision is less readable or understandable than the original text (large penalty)
-`,
+  additional_notes: `It's okay if your edit increases verbosity as long as the resulting language is clearer and more accessible.`,
   as_tool_description: "This tool proposes revisions that reduce the legibility and accessibility of a given text.",
 }
 
-export const accessibleLanguageNerd = buildRevisionNerd(nerd_opts)
+export const accessibleLanguageNerd = new RevisionNerd(nerd_opts)

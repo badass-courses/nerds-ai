@@ -1,6 +1,6 @@
 import { Nerd } from "../../nerd.js"
 import { line_number_inserter } from "../../internals/input_preprocessors/line_number_inserter.js"
-import { BaseNerdOptions, BindableNerd } from "../../internals/types.js"
+import { BaseNerdOptions } from "../../internals/types.js"
 import { NerdOutput } from "../../internals/parsers/index.js"
 import { JsonNerdOutputParser } from "../../internals/parsers/json/index.js"
 
@@ -29,10 +29,6 @@ const schema = `{
     // set this to true if there are multiple matches on the issue you're flagging. If so, your "existing_text" should match them all.
     // You may leave this out entirely if it's false.
     "multiple_matches": boolean
-
-    // a value from 0-1 expressing how certain you are that the edit you're proposing is necessary and correct.
-    // your other instructions may give you guidance for determining this value in a given operation.
-    "confidence": number
   }]
 }`
 
@@ -49,11 +45,11 @@ export type ProposedRevisions = NerdOutput & {
 
 export const revision_parser: JsonNerdOutputParser<ProposedRevisions> = new JsonNerdOutputParser<ProposedRevisions>(schema)
 
-type RevisionNerdBuilder = (opts: BaseNerdOptions) => BindableNerd<ProposedRevisions>
-export const buildRevisionNerd: RevisionNerdBuilder = (nerd_opts) => {
-  const preprocessors = nerd_opts.input_preprocessors || []
-  preprocessors.push(line_number_inserter)
-  nerd_opts.input_preprocessors = preprocessors;
-  const nerd: BindableNerd<ProposedRevisions> = new Nerd<ProposedRevisions>(nerd_opts, revision_parser)
-  return nerd
+export class RevisionNerd extends Nerd<ProposedRevisions> {
+  constructor(nerd_opts: BaseNerdOptions) {
+    const preprocessors = nerd_opts.input_preprocessors || []
+    preprocessors.push(line_number_inserter)
+    nerd_opts.input_preprocessors = preprocessors;
+    super(nerd_opts, revision_parser)
+  }
 }
