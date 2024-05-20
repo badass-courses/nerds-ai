@@ -1,4 +1,4 @@
-import { buildRevisionNerd } from "./index.js"
+import { RevisionNerd } from "./index.js"
 
 const nerd_opts = {
   name: "PersonalityNerd",
@@ -11,14 +11,8 @@ const nerd_opts = {
   do_not_list: [
     "change the underlying semantics of the text"
   ],
-  additional_notes: `If the user forgets to provide additional input specifying a personality, please take on the personality of Deadpool and use one of your edits to remind them to provide the necessary information via a trademark fourth-wall violation that addresses the user of this nerd.
-  
-Confidence Guidance:
-When proposing a given revision, start with confidence = 1 and penalize that value as follows to determine the actual confidence level:
-- The revision is close in proximity to a preceding revision (small penalty)
-- The revision isn't funny or entertaining or whatever traits the target personality is meant to express (medium penalty)
-- The revision is minor and doesn't have a significant impact on the personality of the document (small penalty)`,
+  additional_notes: `If the user forgets to provide additional input specifying a personality, please take on the personality of Deadpool and use one of your edits to remind them to provide the necessary information via a trademark fourth-wall violation that addresses the user of this nerd.`,
   as_tool_description: "This tool proposes revisions that seek to add specified flavor and personality to the text. Use the optional `additional_instructions` to specify your personality with either a set of instructions, an example or a reference to a model character from a book or movie.",
 }
 
-export const personalityNerd = buildRevisionNerd(nerd_opts)
+export const personalityNerd = new RevisionNerd(nerd_opts)

@@ -1,5 +1,5 @@
 import { Nerd } from "../../nerd.js"
-import { BaseNerdOptions, BindableNerd } from "../../internals/types.js"
+import { BaseNerdOptions } from "../../internals/types.js"
 import { NerdOutput } from "../../internals/parsers/index.js"
 import { JsonNerdOutputParser } from "../../internals/parsers/json/index.js"
 
@@ -19,5 +19,8 @@ export type Findings = NerdOutput & {
 
 export const findings_parser: JsonNerdOutputParser<Findings> = new JsonNerdOutputParser<Findings>(schema)
 
-type FindingsNerdBuilder = (opts: BaseNerdOptions) => BindableNerd<Findings>
-export const buildFindingsNerd: FindingsNerdBuilder = (nerd_opts) => new Nerd<Findings>(nerd_opts, findings_parser)
+export class FindingsNerd extends Nerd<Findings> {
+  constructor(nerd_opts: BaseNerdOptions) {
+    super(nerd_opts, findings_parser)
+  }
+}

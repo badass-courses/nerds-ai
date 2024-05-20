@@ -1,4 +1,4 @@
-import { buildFindingsNerd, Findings } from "./index.js"
+import { FindingsNerd, Findings } from "./index.js"
 import { Pinecone } from "@pinecone-database/pinecone"
 import { BindableNerd } from "../../internals/types.js";
 import { ConceptToolkit } from "../../tools/pinecone_tools.js"
@@ -55,5 +55,5 @@ export const buildPineconeBackedConceptNerd: ConceptNerdBuilder = (pineconeConfi
     tools: toolkit.getTools()
   }
 
-  return buildFindingsNerd(nerd_opts)
+  return new FindingsNerd(nerd_opts)
 }

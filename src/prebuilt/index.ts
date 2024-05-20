@@ -6,3 +6,8 @@ export * from "./revision/index.js"
 
 export * from "./findings/wikipedia_research_nerd.js"
 export * from "./findings/vector_backed_concept_nerd.js"
+
+export * from "./markdown/accessible_summarizer.js"
+export * from "./markdown/quiz_nerd.js"
+export * from "./markdown/glossary_nerd.js"
+export * from "./markdown/deduplicator.js"

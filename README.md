@@ -108,13 +108,13 @@ For examples, take a look at how the prebuilt nerds are defined in [./src/prebui
 
 #### Output Parsers - How We Get Typed Output
 
-If we want a JSON nerd that returns typed output, we need to give the nerd definition a JSON output parser. You can see how we do this in our `revision` and `findings` nerd definitions linked above, but I'll embed an example here for reference. This is mostly handled by creating a typescript type that extends `NerdOutput` and an accompanying string describing to the LLM how to structure its response. The `findings` nerds linked above both use this approach:
+If we want a JSON nerd that returns typed output, we need to give the nerd definition a JSON output parser. You can see how we do this in our `revision` and `findings` nerd definitions linked above, but I'll embed an example here for reference. This is mostly handled by creating a typescript type that extends `NerdOutput` and an accompanying string describing to the LLM how to structure its response. The `findings` nerds linked above both use this approach - they're just instantiating the `FindingsNerd` class with different parameters.
 
 ```typescript
-import { Nerd } from '../../nerd.js';
-import { BaseNerdOptions, BindableNerd } from '../../internals/types.js';
-import { NerdOutput } from '../../internals/parsers/index.js';
-import { JsonNerdOutputParser } from '../../internals/parsers/json/index.js';
+import { Nerd } from "../../nerd.js"
+import { BaseNerdOptions } from "../../internals/types.js"
+import { NerdOutput } from "../../internals/parsers/index.js"
+import { JsonNerdOutputParser } from "../../internals/parsers/json/index.js"
 
 const schema = `{
   // the "thought_log" array is for tracking your own thoughts as you carry out your task.
@@ -124,18 +124,19 @@ const schema = `{
 
   // Your task is to identify some set of findings. Please return them here as individual strings.
   "findings": string[]
-}`;
+}`
 
 export type Findings = NerdOutput & {
-  findings: string[];
-};
+  findings: string[]
+}
 
-export const findings_parser: JsonNerdOutputParser<Findings> =
-  new JsonNerdOutputParser<Findings>(schema);
+export const findings_parser: JsonNerdOutputParser<Findings> = new JsonNerdOutputParser<Findings>(schema)
 
-type FindingsNerdBuilder = (opts: BaseNerdOptions) => BindableNerd<Findings>;
-export const buildFindingsNerd: FindingsNerdBuilder = (nerd_opts) =>
-  new Nerd<Findings>(nerd_opts, findings_parser);
+export class FindingsNerd extends Nerd<Findings> {
+  constructor(nerd_opts: BaseNerdOptions) {
+    super(nerd_opts, findings_parser)
+  }
+}
 ```
 
 #### BaseNerd<T>

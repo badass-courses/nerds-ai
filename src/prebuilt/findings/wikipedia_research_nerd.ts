@@ -1,4 +1,4 @@
-import { buildFindingsNerd } from "./index.js"
+import { FindingsNerd } from "./index.js"
 import { WikipediaQueryRun } from "@langchain/community/tools/wikipedia_query_run";
 
 const wikipediaTool = new WikipediaQueryRun({
@@ -25,4 +25,4 @@ const nerd_opts = {
   tools: [wikipediaTool]
 }
 
-export const wikipediaResearchNerd = buildFindingsNerd(nerd_opts)
+export const wikipediaResearchNerd = new FindingsNerd(nerd_opts)
