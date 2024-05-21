@@ -10,6 +10,10 @@ scripts/dewart
 demos
 !demos/.gitkeep
 
+# File Store for AutoNerd
+data
+!data/.gitkeep
+
 # Logs
 logs
 *.log

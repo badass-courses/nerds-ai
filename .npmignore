@@ -1,7 +1,15 @@
-demos
-scripts/egghead
+# Proprietary Input Texts
 sources/0*
 sources/1*
+sources/ec
+scripts/egghead
+scripts/dewart
+demos
+!demos/.gitkeep
+
+# File Store for AutoNerd
+data
+!data/.gitkeep
 
 # Environment Variables
 .env
