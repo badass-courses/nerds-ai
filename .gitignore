@@ -4,7 +4,7 @@
 # Proprietary Input Texts
 sources/0*
 sources/1*
-sources/ec
+sources/_*
 scripts/egghead
 scripts/dewart
 demos
