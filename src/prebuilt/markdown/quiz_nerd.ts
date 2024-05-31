@@ -6,7 +6,7 @@ const nerd_opts = {
   do_list: [
     "Consider not only the main points but also nuanced implications of the text in question.",
     "Propose questions that require critical thought, but whose answers are unambiguously present in the text.",
-    "Include page numbers for each claim made in an answer, so that the answers can be verified by the reader."
+    "**ONLY IF THE SOURCE INCLUDES PAGE NUMBERS** Include page numbers for each claim made in an answer, so that the answers can be verified by the reader."
   ],
   do_not_list: [
     "include 'trick' questions or anything that would subvert a reader's understanding",
