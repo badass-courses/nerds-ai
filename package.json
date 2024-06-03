@@ -1,6 +1,6 @@
 {
   "name": "nerds-ai",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "A toolkit for defining LLM-agnostic tool-using tools (nerds) for specailized tasks",
   "type": "module",
   "author": "Mykola Bilokonsky <mbilokonsky@users.noreply.github.com>",
