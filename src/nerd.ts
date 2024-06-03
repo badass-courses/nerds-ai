@@ -67,6 +67,7 @@ class NerdBinding<T extends NerdOutput> extends NerdBase<T> implements BoundNerd
       purpose: nerd.purpose,
       do_list: nerd.do_list,
       do_not_list: nerd.do_not_list,
+      strategy: nerd.strategy,
       as_tool_description: nerd.as_tool_description,
       additional_notes: nerd.additional_notes,
       tools: nerd.tools,
