@@ -15,6 +15,8 @@ ${do_list.map((item) => `- ${item}`).join("\n")}
   const specify_do_not_list = (do_not_list: string[]): string => `**IMPORTANT** As you carry out your tasks, here is a list of things you should make sure you do not do:
 ${do_not_list.map((item) => `- ${item}`).join("\n")}
 `
+  const specify_strategy = (strategy: string): string => strategy?.length > 0 ? `**Strategy** Please use the following strategy to carry out your task. You should adhere to the steps provided:
+${strategy}` : "";
 
   const specify_additional_notes = (additional_notes: string): string => additional_notes?.length > 0 ? `**Additional Notes**:
 ${additional_notes}
@@ -36,6 +38,7 @@ ${agent_specific_instructions}
 ${specify_do_list(nerd.do_list)}
 ${specify_do_not_list(nerd.do_not_list)}
 ${specify_additional_notes(nerd.additional_notes)}
+${specify_strategy(nerd.strategy)}
 ${specify_agent_instructions(agent_instructions)}
 ${specify_querytime_instructions()}
 ${specify_output_instructions()}

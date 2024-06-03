@@ -9,6 +9,7 @@ export type BaseNerdOptions = {
   purpose: string
   do_list: string[]
   do_not_list: string[]
+  strategy?: string
   additional_notes?: string
   as_tool_description: string
   tools?: StructuredToolInterface[]
@@ -20,8 +21,9 @@ export type BaseNerd<T extends NerdOutput> = {
   purpose: string
   do_list: string[]
   do_not_list: string[]
-  as_tool_description: string
+  strategy?: string
   additional_notes?: string
+  as_tool_description: string
   tools?: StructuredToolInterface[],
   parser: NerdOutputParser<T>,
   input_preprocessors?: NerdInputPreprocessor[]
