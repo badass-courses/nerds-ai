@@ -19,11 +19,14 @@ const schema = `{
   // You may be asked to perform any number of graph operations. You may be traversing to satisfy a query, you may be updating a knowledge graph, etc
   // Whatever the operation you're performing, you will be returning the set of salient vertices and edges.
 
+  // the "source" property on both edges and vertices should always be identical, and set to the ID of the input document.
+
   "vertices": [
     {
       "id": string,
       "label": string,
       "properties": {
+        "source": string,
         [key: string]: string
       }
     }
@@ -36,6 +39,7 @@ const schema = `{
       "from": string,
       "to": string,
       "properties": {
+        source: string,
         [key: string]: string
       }
     }

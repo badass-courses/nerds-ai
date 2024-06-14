@@ -1,6 +1,6 @@
 import { CanonicalConceptMapping, CanonicalLabelMapping, ConceptToolInput, GraphData, KnowledgeGraphTools, RelationshipToolInput } from "./knowledge_extraction_nerd.js";
 import { OpenAIEmbeddings } from "@langchain/openai";
-import { Index, Pinecone, QueryResponse, RecordMetadata } from "@pinecone-database/pinecone"
+import { Index, Pinecone, PineconeRecord, QueryResponse, RecordMetadata } from "@pinecone-database/pinecone"
 
 import { driver, structure } from 'gremlin'
 
@@ -67,8 +67,10 @@ export class PineconeKnowledgeGraphTools extends KnowledgeGraphTools {
     const writeGraphData = async (input: GraphData): Promise<string> => {
       const graph = new Graph()
       const g = graph.traversal().withRemote(dc)
+
       for (let i = 0; i < input.vertices.length; i++) {
         const vertex = input.vertices[i]
+        // let's make sure we add the concept to the pinecone store, too.
         await g.addV(vertex.label).property('id', vertex.id).property('name', vertex.name).next()
       }
 
@@ -76,6 +78,33 @@ export class PineconeKnowledgeGraphTools extends KnowledgeGraphTools {
         const edge = input.edges[j]
         await g.addEdge(edge.from, edge.to, edge.label).next()
       }
+
+      g.close()
+
+      const records: PineconeRecord[] = []
+      const embedded_concepts = await embeddings.embedDocuments(input.vertices.map((vertex) => vertex.name))
+      for (let i = 0; i < input.vertices.length; i++) {
+        const { name, label } = input.vertices[i]
+        records.push({
+          id: name,
+          values: embedded_concepts[i],
+          metadata: { label }
+        })
+      }
+
+      await this.concept_index.upsert(records)
+
+      const embedded_labels = await embeddings.embedDocuments(input.edges.map((edge) => edge.label))
+      const label_records: PineconeRecord[] = []
+      for (let i = 0; i < input.edges.length; i++) {
+        const { label } = input.edges[i]
+        label_records.push({
+          id: label,
+          values: embedded_labels[i]
+        })
+      }
+
+      await this.relationship_label_index.upsert(label_records)
 
       return "ok"
     }
