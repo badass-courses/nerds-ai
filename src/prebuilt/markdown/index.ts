@@ -4,7 +4,7 @@ import { MarkdownNerdOutputParser } from "../../internals/parsers/markdown/index
 
 export const default_parser: MarkdownNerdOutputParser = new MarkdownNerdOutputParser()
 
-export class MarkdownNerd extends Nerd<string> {
+export class MarkdownNerd extends Nerd<string, string> {
   constructor(nerd_opts: BaseNerdOptions, parser: MarkdownNerdOutputParser = default_parser) {
     super(nerd_opts, parser)
   }

@@ -1,6 +1,6 @@
 import { StructuredToolInterface } from "@langchain/core/tools"
 import { NerdOutput, NerdOutputParser } from "./internals/parsers/index.js";
-import { BaseNerdOptions, NerdInputPreprocessor, BoundNerd, BindableNerd, BaseNerd } from "./internals/types.js";
+import { BaseNerdOptions, NerdInputPreprocessor, BoundNerd, BindableNerd, BaseNerd, NerdInput } from "./internals/types.js";
 import { NerdModel, NerdModelName, SupportedPlatform, getModelByName } from "./internals/models/index.js";
 import { Runnable, RunnableConfig } from "langchain/runnables";
 import { createRunner } from "./internals/runners/index.js";
@@ -22,18 +22,19 @@ import { wrapNerdAsTool } from "./tools/index.js";
  * We have this weird setup because we don't want you to be able to call `new Nerd().bindToModel(model1).bindToModel(model2)` etc.
  * So a nerd is either `bindable` or `bound` but never both.
  */
-abstract class NerdBase<T extends NerdOutput> implements BaseNerd<T> {
+abstract class NerdBase<I extends NerdInput, O extends NerdOutput> implements BaseNerd<I, O> {
   name: string
   purpose: string
   do_list: string[]
   do_not_list: string[]
   as_tool_description: string
-  parser: NerdOutputParser<T>
+  parser: NerdOutputParser<O>
   input_preprocessors?: NerdInputPreprocessor[]
   additional_notes?: string
   tools?: StructuredToolInterface[]
+  stringify_input: (input: I) => string;
 
-  constructor(nerd_config: BaseNerdOptions, output_parser: NerdOutputParser<T>) {
+  constructor(nerd_config: BaseNerdOptions, output_parser: NerdOutputParser<O>) {
     this.name = nerd_config.name
     this.purpose = nerd_config.purpose
     this.do_list = nerd_config.do_list
@@ -43,25 +44,33 @@ abstract class NerdBase<T extends NerdOutput> implements BaseNerd<T> {
     this.tools = nerd_config.tools
     this.input_preprocessors = nerd_config.input_preprocessors
     this.parser = output_parser
+    this.stringify_input = (input: I): string => {
+      // if I is string, return it directly:
+      if (typeof input === "string") {
+        return input
+      }
+      // otherwise, stringify it:
+      return JSON.stringify(input)
+    }
   }
 }
 
-export class Nerd<T extends NerdOutput> extends NerdBase<T> implements BindableNerd<T> {
-  constructor(nerd_config: BaseNerdOptions, output_parser: NerdOutputParser<T>) {
+export class Nerd<I extends NerdInput, O extends NerdOutput> extends NerdBase<I, O> implements BindableNerd<I, O> {
+  constructor(nerd_config: BaseNerdOptions, output_parser: NerdOutputParser<O>) {
     super(nerd_config, output_parser)
   }
 
-  async bindToModel(model: NerdModel | NerdModelName): Promise<BoundNerd<T>> {
+  async bindToModel(model: NerdModel | NerdModelName): Promise<BoundNerd<I, O>> {
     return await (new NerdBinding(this, model)).init()
   }
 }
 
-class NerdBinding<T extends NerdOutput> extends NerdBase<T> implements BoundNerd<T> {
+class NerdBinding<I extends NerdInput, O extends NerdOutput> extends NerdBase<I, O> implements BoundNerd<I, O> {
   prompt: ChatPromptTemplate
   model: NerdModel
   runner: Runnable
 
-  constructor(public nerd: BaseNerd<T>, model: NerdModel | NerdModelName) {
+  constructor(public nerd: BaseNerd<I, O>, model: NerdModel | NerdModelName) {
     super({
       name: nerd.name,
       purpose: nerd.purpose,
@@ -115,15 +124,16 @@ class NerdBinding<T extends NerdOutput> extends NerdBase<T> implements BoundNerd
     return opts
   }
 
-  async init(): Promise<BoundNerd<T>> {
+  async init(): Promise<BoundNerd<I, O>> {
     this.runner = await this.construct_runner()
     return this
   }
 
-  async invoke(input: string, querytime_instructions: string): Promise<T> {
-    const unformatted_result = await this.invoke_raw(input, querytime_instructions)
+  async invoke(input: I, querytime_instructions: string): Promise<O> {
+    const input_string = this.stringify_input(input)
+    const unformatted_result = await this.invoke_raw(input_string, querytime_instructions)
     const parser = OutputFixingParser.fromLLM(new ChatOpenAI(), this.parser)
-    return await parser.parse(unformatted_result) as T
+    return await parser.parse(unformatted_result) as O
   }
 
   async invoke_raw(input: string, querytime_instructions: string): Promise<string> {

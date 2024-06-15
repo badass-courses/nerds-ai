@@ -52,9 +52,14 @@ export type GraphResult = NerdOutput & {
   edges: Edge[],
 }
 
+export type KnowledgeGraphInput = {
+  source_id: string,
+  source_text: string
+}
+
 export const graph_update_parser: JsonNerdOutputParser<GraphResult> = new JsonNerdOutputParser<GraphResult>(schema)
 
-export class GraphNerd extends Nerd<GraphResult> {
+export class GraphNerd extends Nerd<KnowledgeGraphInput, GraphResult> {
   constructor(nerd_opts: BaseNerdOptions, parser: JsonNerdOutputParser<GraphResult> = graph_update_parser) {
     super(nerd_opts, parser)
   }

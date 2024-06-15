@@ -45,7 +45,7 @@ export type ProposedRevisions = NerdOutput & {
 
 export const revision_parser: JsonNerdOutputParser<ProposedRevisions> = new JsonNerdOutputParser<ProposedRevisions>(schema)
 
-export class RevisionNerd extends Nerd<ProposedRevisions> {
+export class RevisionNerd extends Nerd<string, ProposedRevisions> {
   constructor(nerd_opts: BaseNerdOptions) {
     const preprocessors = nerd_opts.input_preprocessors || []
     preprocessors.push(line_number_inserter)
