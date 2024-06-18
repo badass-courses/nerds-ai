@@ -11,10 +11,9 @@ const schema = `{
   "thought_log": string[],
 
   // This is a graph query result. It contains a set of vertices and edges defined using the Gremlin format.
-  // - An "id" is a unique identifier for the vertex or edge.
   // - A "label" is a string that describes the type of vertex or edge.
   // - "from" and "to" are the ids of the vertices that the edge connects.
-  // - "properties" is a map of key-value pairs that describe the vertex or edge.
+  // - "properties" is a map of key-value pairs that describe the vertex or edge. we really just use it for "name" in this case.
 
   // You may be asked to perform any number of graph operations. You may be traversing to satisfy a query, you may be updating a knowledge graph, etc
   // Whatever the operation you're performing, you will be returning the set of salient vertices and edges.
@@ -23,24 +22,23 @@ const schema = `{
 
   "vertices": [
     {
-      "id": string,
       "label": string,
       "properties": {
-        "source": string,
-        [key: string]: string
+        "name": string
+        [key: string]: any // any other salient properties
       }
     }
   ],
 
   "edges": [
     {
-      "id": string,
       "label": string,
       "from": string,
       "to": string,
       "properties": {
-        source: string,
-        [key: string]: string
+        "name": string // format this as "(from)-[name]->(to)"
+        "source": string // the ID of the input document
+        [key: string]: any // any other salient properties
       }
     }
   ]
