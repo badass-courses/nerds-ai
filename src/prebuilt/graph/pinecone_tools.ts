@@ -75,12 +75,8 @@ export class PineconeKnowledgeGraphTools extends KnowledgeGraphTools {
       return output
     }
 
-    const to_capitalized_snake_case = (input: string): string => {
-      return input.toUpperCase().replace(/\s+/g, "_").replace(/-+/g, "_")
-    }
-
-    const to_lower_snake_case = (input: string): string => {
-      return input.toLowerCase().replace(/\s+/g, "_").replace(/-+/g, "_")
+    const make_safe = (input: string): string => {
+      return input.replace(/\s+/g, "_").replace(/-+/g, "_")
     }
 
     const write_graph = async (input: GraphData): Promise<string> => {
@@ -147,17 +143,17 @@ RETURN source.name`;
         source_id: input.source_id,
         vertices: input.vertices.map((vertex) => {
           return {
-            id: "v_" + to_lower_snake_case(vertex.properties.name),
-            label: to_capitalized_snake_case(vertex.label),
+            id: "v_" + make_safe(vertex.properties.name),
+            label: make_safe(vertex.label),
             properties: vertex.properties
           }
         }).filter((vertex, index, self) => {
           return index === self.findIndex((t) => (t.id === vertex.id))
         }),
         edges: input.edges.map((edge) => {
-          const label = to_capitalized_snake_case(edge.label)
-          const from = "v_" + to_lower_snake_case(edge.from)
-          const to = "v_" + to_lower_snake_case(edge.to)
+          const label = make_safe(edge.label)
+          const from = "v_" + make_safe(edge.from)
+          const to = "v_" + make_safe(edge.to)
           const id = `${from}-${label}->${to}`
 
           return {
