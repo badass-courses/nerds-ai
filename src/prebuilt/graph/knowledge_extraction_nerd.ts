@@ -11,12 +11,12 @@ const default_nerd_config: BaseNerdOptions = {
     "Identify the concepts in the text that are relevant to text's operational domain.",
     "When identifying relationships, seek to capture non-obvious but salient connections between concepts.",
     "If the the text is clearly in part about some technical concept that is not explicitly named you may still extract that concept.",
+    "Relationship labels should convey a specific relationship with specific semantics. Generic relations aren't helpful.",
     "*IMPORTANT* You MUST use all three tools as described in your strategy - the ConceptCanonizer, RelationshipCanonizer, and GraphWriter."
   ],
   do_not_list: [
-    "Include any concepts that are specific to the text, for instance names of objects or types from code samples or specific examples that are not generally applicable to the operational domain of the text.",
-    "Perform any kind of analysis on the extracted entities and relationships",
-    "Re-create any of the concepts or relationships if any have been passed in as already having been identified.",
+    "*IMPORTANT* DO NOT Include any concepts that are specific to the text, for instance names of objects or types from code samples or specific examples that are not generally applicable to the operational domain of the text.",
+    "*IMPORTANT* DO NOT Use any relationship labels that are too generic, like 'uses' or 'has'. These are not helpful in a knowledge graph."
   ],
   strategy: `Use the following steps to execute your task:
 1. *Identify Preliminary Concepts*: Identify 10-15 concepts in the text that can be meaningfully added to a larger knowledge graph over the operational domain of the text.

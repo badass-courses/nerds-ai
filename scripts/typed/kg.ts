@@ -102,7 +102,7 @@ const main = async (): Promise<ResultType> => {
   const reset_status = await reset_data(true)
   console.log(`Reset status: ${reset_status}`)
 
-  const nerd = await unbound_nerd.bindToModel("gpt-4o")
+  const nerd = await unbound_nerd.bindToModel("claude-3-5-sonnet-20240620")
   const results = {}
 
   for (const input of inputs) {
