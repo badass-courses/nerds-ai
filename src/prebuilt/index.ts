@@ -11,3 +11,5 @@ export * from "./markdown/accessible_summarizer.js"
 export * from "./markdown/quiz_nerd.js"
 export * from "./markdown/glossary_nerd.js"
 export * from "./markdown/deduplicator.js"
+
+export * from "./graph/knowledge_extraction_nerd.js"
