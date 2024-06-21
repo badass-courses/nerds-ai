@@ -70,7 +70,7 @@ export class Nerd<I extends NerdInput, O extends NerdOutput> extends NerdBase<I,
   }
 }
 
-class NerdBinding<I extends NerdInput, O extends NerdOutput> extends NerdBase<I, O> implements BoundNerd<I, O> {
+class NerdBinding<I extends NerdInput, O extends NerdOutput> extends Nerd<I, O> implements BoundNerd<I, O> {
   prompt: ChatPromptTemplate
   model: NerdModel
   runner: Runnable
@@ -135,9 +135,9 @@ class NerdBinding<I extends NerdInput, O extends NerdOutput> extends NerdBase<I,
   }
 
   async invoke(structured_input: I, querytime_instructions: string): Promise<O> {
-    const { input, runtime_instructions } = await this.stringify_input(structured_input, querytime_instructions)
+    const { input, runtime_instructions } = await this.nerd.stringify_input(structured_input, querytime_instructions)
     const unformatted_result = await this.invoke_raw(input, runtime_instructions)
-    return this.postprocess_output(unformatted_result)
+    return this.nerd.postprocess_output(unformatted_result)
   }
 
   async invoke_raw(input: string, querytime_instructions: string): Promise<string> {

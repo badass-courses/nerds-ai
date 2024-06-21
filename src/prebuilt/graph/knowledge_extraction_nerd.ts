@@ -163,7 +163,6 @@ export class KnowledgeExtractionNerd extends GraphNerd {
   }
 
   public override async stringify_input(input: KnowledgeGraphInput, runtime_instructions: string): Promise<{ input: string, runtime_instructions: string }> {
-    console.log("\n\n\n\nWE ARE OVERRIDING THE STRINGIFY INPUT METHOD\n\n\n\n")
     const updated_runtime_instructions = runtime_instructions + "\n\n" + await this.build_runtime_instructions()
     return super.stringify_input(input, updated_runtime_instructions)
   }

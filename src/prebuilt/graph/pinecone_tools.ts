@@ -42,8 +42,7 @@ export class PineconeKnowledgeGraphTools extends KnowledgeGraphTools {
 
         const existing_data: QueryResponse<RecordMetadata> = await this.concept_index.query({ vector: embedded_concept_name, topK: 5, includeMetadata: true })
         const matches = existing_data.matches || []
-        console.log("Found " + matches.length + " matches for " + name)
-        const similar_concepts = matches.filter((record) => record.score && record.score < 0.2).map((record) => {
+        const similar_concepts = matches.filter((record) => record.score && record.score > 0.2).map((record) => {
           return {
             name: record.id,
             label: record.metadata.label as string
@@ -65,7 +64,7 @@ export class PineconeKnowledgeGraphTools extends KnowledgeGraphTools {
         const existing_data: QueryResponse<RecordMetadata> = await this.relationship_label_index.query({ vector: embedded_label, topK: 5 })
         const matches = existing_data.matches || []
 
-        const similar_labels = matches.filter((record) => record.score && record.score < 0.2).map((record) => {
+        const similar_labels = matches.filter((record) => record.score && record.score > 0.2).map((record) => {
           return record.id as string
         })
 
