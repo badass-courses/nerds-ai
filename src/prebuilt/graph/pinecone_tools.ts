@@ -1,4 +1,4 @@
-import { CanonicalConceptMapping, CanonicalLabelMapping, ConceptToolInput, GraphData, KnowledgeGraphTools, RelationshipToolInput } from "./knowledge_extraction_nerd.js";
+import { CanonicalConceptMapping, CanonicalLabelMapping, ConceptToolInput, ExistingLabels, GraphData, KnowledgeGraphTools, RelationshipToolInput } from "./knowledge_extraction_nerd.js";
 import { OpenAIEmbeddings } from "@langchain/openai";
 import { Index, Pinecone, PineconeRecord, QueryResponse, RecordMetadata } from "@pinecone-database/pinecone"
 
@@ -42,7 +42,7 @@ export class PineconeKnowledgeGraphTools extends KnowledgeGraphTools {
 
         const existing_data: QueryResponse<RecordMetadata> = await this.concept_index.query({ vector: embedded_concept_name, topK: 5, includeMetadata: true })
         const matches = existing_data.matches || []
-
+        console.log("Found " + matches.length + " matches for " + name)
         const similar_concepts = matches.filter((record) => record.score && record.score < 0.2).map((record) => {
           return {
             name: record.id,
@@ -76,12 +76,44 @@ export class PineconeKnowledgeGraphTools extends KnowledgeGraphTools {
     }
 
     const make_safe = (input: string): string => {
-      return input.replace(/\s+/g, "_").replace(/-+/g, "_")
+      return input
+        .replace(/[\s\-:+"'<>[\]{}()+=?!,|\\/#&*^%$@`~.]+/g, "_") // replace all specified characters with underscores
+        .replace(/_+/g, "_"); // replace multiple underscores with a single underscore
+
+      /* for documentation purposes, the above is intended to replace the below:
+      return input
+        .replace(/\s+/g, "_") // replace spaces with underscores
+        .replace(/-+/g, "_") // replace dashes with underscores
+        .replace(/:+/g, "_") // replace colons with underscores
+        .replace(/"+/g, "_") // replace quotes with underscores
+        .replace(/'+/g, "_") // replace single quotes with underscores
+        .replace(/<+/g, "_").replace(/>+/g, "_") // replace angle brackets with underscores
+        .replace(/\[+/g, "_").replace(/\]+/g, "_") // replace square brackets with underscores
+        .replace(/\{+/g, "_").replace(/\}+/g, "_") // replace curly brackets with underscores
+        .replace(/\(+/g, "_").replace(/\)+/g, "_") // replace parentheses with underscores
+        .replace(/\++/g, "_") // replace plus signs with underscores
+        .replace(/\?+/g, "_") // replace question marks with underscores
+        .replace(/!+/g, "_") // replace exclamation points with underscores
+        .replace(/,+/g, "_") // replace commas with underscores
+        .replace(/\|+/g, "_") // replace pipes with underscores
+        .replace(/\\+/g, "_") // replace backslashes with underscores
+        .replace(/\//g, "_") // replace forward slashes with underscores
+        .replace(/#+/g, "_") // replace hashtags with underscores
+        .replace(/&+/g, "_") // replace ampersands with underscores
+        .replace(/\*+/g, "_") // replace asterisks with underscores
+        .replace(/\^+/g, "_") // replace carets with underscores
+        .replace(/%+/g, "_") // replace percent signs with underscores
+        .replace(/\$+/g, "_") // replace dollar signs with underscores
+        .replace(/@+/g, "_") // replace at signs with underscores
+        .replace(/`+/g, "") // remove backticks
+        .replace(/~+/g, "") // remove tildes
+        .replace(/\.+/g, "_") // replace periods with underscores
+        .replace(/_+/g, "_") // replace multiple underscores with a single underscore */
     }
 
     const write_graph = async (input: GraphData): Promise<string> => {
       const query = `MERGE (source:Document {name: "${input.source_id}"})
-${input.vertices.map((vertex) => `MERGE (${vertex.id}:${vertex.label} {name: "${vertex.properties.name}"})\nMERGE (source)-[:REFERENCES]->(${vertex.id})`).join("\n")}
+${input.vertices.map((vertex) => `MERGE (${vertex.id}:${vertex.label} {name: "${vertex.name}"})\nMERGE (source)-[:REFERENCES]->(${vertex.id})`).join("\n")}
 ${input.edges.map((edge) => `MERGE (${edge.from})-[:${edge.label} {source: "${input.source_id}"}]->(${edge.to})`).join("\n")}
 RETURN source.name`;
 
@@ -95,7 +127,7 @@ RETURN source.name`;
       } catch (e) {
         console.error("Error writing graph data to Neo4J")
         console.dir(e)
-        return e.message
+        throw e
       }
     }
 
@@ -143,25 +175,22 @@ RETURN source.name`;
         source_id: input.source_id,
         vertices: input.vertices.map((vertex) => {
           return {
-            id: "v_" + make_safe(vertex.properties.name),
+            id: make_safe(vertex.name),
+            name: vertex.name,
             label: make_safe(vertex.label),
-            properties: vertex.properties
           }
         }).filter((vertex, index, self) => {
-          return index === self.findIndex((t) => (t.id === vertex.id))
+          return index === self.findIndex((t) => (t.name === vertex.name))
         }),
         edges: input.edges.map((edge) => {
           const label = make_safe(edge.label)
-          const from = "v_" + make_safe(edge.from)
-          const to = "v_" + make_safe(edge.to)
-          const id = `${from}-${label}->${to}`
+          const from = make_safe(edge.from)
+          const to = make_safe(edge.to)
 
           return {
-            id,
             label,
             from,
             to,
-            properties: edge.properties
           }
         })
       }
@@ -174,7 +203,7 @@ RETURN source.name`;
         console.log("Error writing graph data to Neo4J", e.stack)
       }
 
-      const concepts = formatted_input.vertices.map((vertex) => { return { name: vertex.properties.name, label: vertex.label } })
+      const concepts = formatted_input.vertices
       try {
         console.log("writing concepts to vector store")
         result.concept_index_write = await write_concepts({ proposed_concepts: concepts })
@@ -182,7 +211,6 @@ RETURN source.name`;
         result.concept_index_write = e.message
         console.log("Error writing concepts to vector store", e.stack)
       }
-
 
       const relationship_labels = formatted_input.edges.map((edge) => edge.label)
       try {
@@ -197,7 +225,26 @@ RETURN source.name`;
       return JSON.stringify(result)
     }
 
-    super(mapConceptToCanon, mapLabelToCanon, writeGraphData)
+    const list_labels = async (): Promise<ExistingLabels> => {
+      const session = driver.session()
+      const vertex_label_query = `MATCH (n) RETURN DISTINCT labels(n) as labels`
+      const edge_label_query = `MATCH ()-[r]->() RETURN DISTINCT type(r) as label`
+      try {
+        const vertex = await session.run(vertex_label_query)
+        const edge = await session.run(edge_label_query)
+        await session.close()
+        const vertex_labels = vertex.records.map((record) => record.get("labels")).flat().filter((label) => label !== "Document")
+        const edge_labels = edge.records.map((record) => record.get("label"))
+        return { vertex_labels, edge_labels }
+      } catch (e) {
+        console.error("Error listing labels in Neo4J")
+        console.dir(e)
+        throw e
+      }
+
+    }
+
+    super(mapConceptToCanon, mapLabelToCanon, writeGraphData, list_labels)
     this.concept_index = pinecone.index("concepts")
     this.relationship_label_index = pinecone.index("relationship-labels")
   }

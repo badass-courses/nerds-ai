@@ -2,7 +2,6 @@ import { Nerd } from "../../nerd.js"
 import { BaseNerdOptions } from "../../internals/types.js"
 import { NerdOutput } from "../../internals/parsers/index.js"
 import { JsonNerdOutputParser } from "../../internals/parsers/json/index.js"
-import { Vertex, Edge } from 'gremlin'
 
 const schema = `{
   // the "thought_log" array is for tracking your own thoughts as you carry out your task.
@@ -10,23 +9,17 @@ const schema = `{
   // Use these thoughts as you complete your task to help you stay focused.
   "thought_log": string[],
 
-  // This is a graph query result. It contains a set of vertices and edges defined using the Gremlin format.
+  // This is a graph query result. It contains a set of vertices and edges. A vertex has a name and a label. An edge has a label and then sanitized IDs for "from" and "to" vertices.
   // - A "label" is a string that describes the type of vertex or edge.
   // - "from" and "to" are the ids of the vertices that the edge connects.
-  // - "properties" is a map of key-value pairs that describe the vertex or edge. we really just use it for "name" in this case.
 
   // You may be asked to perform any number of graph operations. You may be traversing to satisfy a query, you may be updating a knowledge graph, etc
   // Whatever the operation you're performing, you will be returning the set of salient vertices and edges.
 
-  // the "source" property on both edges and vertices should always be identical, and set to the ID of the input document.
-
   "vertices": [
     {
+      "name": string,
       "label": string,
-      "properties": {
-        "name": string
-        [key: string]: any // any other salient properties
-      }
     }
   ],
 
@@ -35,19 +28,30 @@ const schema = `{
       "label": string,
       "from": string,
       "to": string,
-      "properties": {
-        "name": string // format this as "(from)-[name]->(to)"
-        "source": string // the ID of the input document
-        [key: string]: any // any other salient properties
-      }
     }
   ]
 }`
 
+export type Vertex = {
+  id: string,
+  name: string,
+  label: string,
+}
+
+export type Edge = {
+  label: string,
+  from: string,
+  to: string
+}
 
 export type GraphResult = NerdOutput & {
   vertices: Vertex[],
   edges: Edge[],
+}
+
+export type GraphGuidance = {
+  vertex_labels: string[],
+  edge_labels: string[],
 }
 
 export type KnowledgeGraphInput = {

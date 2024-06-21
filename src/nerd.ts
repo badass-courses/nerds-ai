@@ -32,7 +32,6 @@ abstract class NerdBase<I extends NerdInput, O extends NerdOutput> implements Ba
   input_preprocessors?: NerdInputPreprocessor[]
   additional_notes?: string
   tools?: StructuredToolInterface[]
-  stringify_input: (input: I) => string;
 
   constructor(nerd_config: BaseNerdOptions, output_parser: NerdOutputParser<O>) {
     this.name = nerd_config.name
@@ -44,14 +43,20 @@ abstract class NerdBase<I extends NerdInput, O extends NerdOutput> implements Ba
     this.tools = nerd_config.tools
     this.input_preprocessors = nerd_config.input_preprocessors
     this.parser = output_parser
-    this.stringify_input = (input: I): string => {
-      // if I is string, return it directly:
-      if (typeof input === "string") {
-        return input
-      }
-      // otherwise, stringify it:
-      return JSON.stringify(input)
+  }
+
+  async stringify_input(input: I, runtime_instructions: string): Promise<{ input: string, runtime_instructions: string }> {
+    // if I is string, return it directly:
+    if (typeof input === "string") {
+      return { input, runtime_instructions }
     }
+    // otherwise, stringify it:
+    return { input: JSON.stringify(input), runtime_instructions }
+  }
+
+  async postprocess_output(raw_output: string): Promise<O> {
+    const parser = OutputFixingParser.fromLLM(new ChatOpenAI(), this.parser)
+    return await parser.parse(raw_output) as O
   }
 }
 
@@ -129,11 +134,10 @@ class NerdBinding<I extends NerdInput, O extends NerdOutput> extends NerdBase<I,
     return this
   }
 
-  async invoke(input: I, querytime_instructions: string): Promise<O> {
-    const input_string = this.stringify_input(input)
-    const unformatted_result = await this.invoke_raw(input_string, querytime_instructions)
-    const parser = OutputFixingParser.fromLLM(new ChatOpenAI(), this.parser)
-    return await parser.parse(unformatted_result) as O
+  async invoke(structured_input: I, querytime_instructions: string): Promise<O> {
+    const { input, runtime_instructions } = await this.stringify_input(structured_input, querytime_instructions)
+    const unformatted_result = await this.invoke_raw(input, runtime_instructions)
+    return this.postprocess_output(unformatted_result)
   }
 
   async invoke_raw(input: string, querytime_instructions: string): Promise<string> {

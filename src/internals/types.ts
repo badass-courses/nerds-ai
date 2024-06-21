@@ -27,14 +27,15 @@ export type BaseNerd<I extends NerdInput, O extends NerdOutput> = {
   tools?: StructuredToolInterface[],
   parser: NerdOutputParser<O>,
   input_preprocessors?: NerdInputPreprocessor[],
-  stringify_input: (input: I) => string
+  stringify_input: (input: I, runtime_instructions: string) => Promise<{ input: string, runtime_instructions: string }>,
+  postprocess_output: (raw_output: string) => Promise<O>
 }
 
 export type BindableNerd<I extends NerdInput, O extends NerdOutput> = BaseNerd<I, O> & {
   bindToModel: (model: NerdModel | NerdModelName) => Promise<BoundNerd<I, O>>
 }
 
-export type NerdInput = Record<string, (string | number | boolean)> | string
+export type NerdInput = (Record<string, unknown> | string)
 
 export type BoundNerd<I extends NerdInput, O extends NerdOutput> = BaseNerd<I, O> & {
   prompt: ChatPromptTemplate,
