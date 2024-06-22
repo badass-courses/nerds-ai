@@ -78,7 +78,6 @@ const reset_data = async (do_reset = false): Promise<string> => {
   console.log("Resetting data")
   await reset_neo4j()
   await reset_pinecone_index("concepts")
-  await reset_pinecone_index("relationship-labels")
   return "ok"
 }
 

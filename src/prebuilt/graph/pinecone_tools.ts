@@ -1,8 +1,9 @@
-import { CanonicalConceptMapping, CanonicalLabelMapping, ConceptToolInput, ExistingLabels, GraphData, KnowledgeGraphTools, RelationshipToolInput } from "./knowledge_extraction_nerd.js";
+import { CanonicalConceptMapping, ConceptToolInput, ExistingLabels, KnowledgeGraphTools } from "./knowledge_extraction_nerd.js";
 import { OpenAIEmbeddings } from "@langchain/openai";
 import { Index, Pinecone, PineconeRecord, QueryResponse, RecordMetadata } from "@pinecone-database/pinecone"
 
 import neo4j from 'neo4j-driver'
+import { GraphData } from "./index.js";
 
 const graph_uri = process.env.NEO4J_URI
 const graph_user = process.env.NEO4J_USERNAME
@@ -27,7 +28,6 @@ const embeddings = new OpenAIEmbeddings();
 
 export class PineconeKnowledgeGraphTools extends KnowledgeGraphTools {
   concept_index: Index
-  relationship_label_index: Index
 
   constructor(public pinecone: Pinecone) {
     // the expectation here is that canonical records will have metadata that includes a label. The "name" of the concept IS the ID.
@@ -52,26 +52,6 @@ export class PineconeKnowledgeGraphTools extends KnowledgeGraphTools {
       }
 
       return output;
-    }
-
-    const mapLabelToCanon = async (input: RelationshipToolInput): Promise<Array<CanonicalLabelMapping>> => {
-      const embedded_labels = await embeddings.embedDocuments(input.proposed_relationships)
-      const output: Array<CanonicalLabelMapping> = []
-      for (let i = 0; i < input.proposed_relationships.length; i++) {
-        const label = input.proposed_relationships[i]
-        const embedded_label = embedded_labels[i]
-
-        const existing_data: QueryResponse<RecordMetadata> = await this.relationship_label_index.query({ vector: embedded_label, topK: 5 })
-        const matches = existing_data.matches || []
-
-        const similar_labels = matches.filter((record) => record.score && record.score > 0.2).map((record) => {
-          return record.id as string
-        })
-
-        output.push({ label, possible_matches: similar_labels })
-      }
-
-      return output
     }
 
     const make_safe = (input: string): string => {
@@ -113,7 +93,7 @@ export class PineconeKnowledgeGraphTools extends KnowledgeGraphTools {
     const write_graph = async (input: GraphData): Promise<string> => {
       const query = `MERGE (source:Document {name: "${input.source_id}"})
 ${input.vertices.map((vertex) => `MERGE (${vertex.id}:${vertex.label} {name: "${vertex.name}"})\nMERGE (source)-[:REFERENCES]->(${vertex.id})`).join("\n")}
-${input.edges.map((edge) => `MERGE (${edge.from})-[:${edge.label} {source: "${input.source_id}"}]->(${edge.to})`).join("\n")}
+${input.edges.map((edge) => `MERGE (${edge.from})-[:${edge.label} {source: "${input.source_id}", summary: "${edge.summary}"}]->(${edge.to})`).join("\n")}
 RETURN source.name`;
 
       console.log(query)
@@ -147,26 +127,10 @@ RETURN source.name`;
       return `Wrote ${records.length} concepts to vector store`
     }
 
-    const write_relationship_labels = async (input: RelationshipToolInput): Promise<string> => {
-      const embedded_labels = await embeddings.embedDocuments(input.proposed_relationships)
-      const label_records: PineconeRecord[] = []
-      for (let i = 0; i < input.proposed_relationships.length; i++) {
-        const label = input.proposed_relationships[i]
-        label_records.push({
-          id: label,
-          values: embedded_labels[i]
-        })
-      }
-
-      await this.relationship_label_index.upsert(label_records)
-      return `Wrote ${label_records.length} relationship labels to vector store`
-    }
-
     const writeGraphData = async (input: GraphData): Promise<string> => {
       const result = {
         graph_write: null,
-        concept_index_write: null,
-        relationship_label_index_write: null
+        concept_index_write: null
       };
 
       // we need to make sure that all vertices are unique, so let's filter out any duplicate id's
@@ -190,13 +154,14 @@ RETURN source.name`;
             label,
             from,
             to,
+            summary: edge.summary
           }
         })
       }
 
       try {
         console.log("Updating graph")
-        result.graph_write = write_graph(formatted_input)
+        result.graph_write = await write_graph(formatted_input)
       } catch (e) {
         result.graph_write = e.message
         console.log("Error writing graph data to Neo4J", e.stack)
@@ -210,16 +175,6 @@ RETURN source.name`;
         result.concept_index_write = e.message
         console.log("Error writing concepts to vector store", e.stack)
       }
-
-      const relationship_labels = formatted_input.edges.map((edge) => edge.label)
-      try {
-        console.log("writing relationships to vector store")
-        result.relationship_label_index_write = await write_relationship_labels({ proposed_relationships: relationship_labels })
-      } catch (e) {
-        result.relationship_label_index_write = e.message
-        console.log("Error writing relationships to vector store", e.message)
-      }
-
 
       return JSON.stringify(result)
     }
@@ -243,9 +198,8 @@ RETURN source.name`;
 
     }
 
-    super(mapConceptToCanon, mapLabelToCanon, writeGraphData, list_labels)
+    super(mapConceptToCanon, writeGraphData, list_labels)
     this.concept_index = pinecone.index("concepts")
-    this.relationship_label_index = pinecone.index("relationship-labels")
   }
 
 }

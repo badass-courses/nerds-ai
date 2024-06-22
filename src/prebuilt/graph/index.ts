@@ -16,6 +16,9 @@ const schema = `{
   // You may be asked to perform any number of graph operations. You may be traversing to satisfy a query, you may be updating a knowledge graph, etc
   // Whatever the operation you're performing, you will be returning the set of salient vertices and edges.
 
+  // The "source_id" is a unique identifier for the source of the graph data. It is a string and should be passed in as part of the input.
+  "source_id": string,
+
   "vertices": [
     {
       "name": string,
@@ -28,6 +31,7 @@ const schema = `{
       "label": string,
       "from": string,
       "to": string,
+      "summary": string // a very concise statement articulating what the edge represents. should be more information rich than could be inferred from <from>-<label>-<to>.
     }
   ]
 }`
@@ -41,13 +45,17 @@ export type Vertex = {
 export type Edge = {
   label: string,
   from: string,
-  to: string
+  to: string,
+  summary?: string
 }
 
-export type GraphResult = NerdOutput & {
+export type GraphData = {
+  source_id: string,
   vertices: Vertex[],
-  edges: Edge[],
+  edges: Edge[]
 }
+
+export type GraphResult = NerdOutput & GraphData
 
 export type GraphGuidance = {
   vertex_labels: string[],
