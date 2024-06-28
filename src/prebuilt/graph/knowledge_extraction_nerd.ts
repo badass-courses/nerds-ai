@@ -1,6 +1,6 @@
 import { DynamicStructuredTool, StructuredTool } from "@langchain/core/tools";
 import { BaseNerdOptions } from "../../internals/types.js";
-import { GraphData, GraphGuidance, GraphNerd, GraphResult, KnowledgeGraphInput } from "./index.js";
+import { Edge, GraphData, GraphGuidance, GraphNerd, GraphResult, KnowledgeGraphInput } from "./index.js";
 import { z } from 'zod';
 
 const default_nerd_config: BaseNerdOptions = {
@@ -61,15 +61,21 @@ export class KnowledgeGraphTools {
   concept_canonizer: (concepts: ConceptToolInput) => Promise<Array<CanonicalConceptMapping>>
   graph_writer: (data: GraphData) => Promise<string>
   list_labels: () => Promise<ExistingLabels>
+  get_existing_relationships_for_source: (source_id) => Promise<Edge[]>
+  get_existing_concepts_for_source: (source_id) => Promise<Concept[]>
 
   constructor(
     concept_canonizer: (concepts: ConceptToolInput) => Promise<Array<CanonicalConceptMapping>>,
     graph_writer: (data: GraphData) => Promise<string>,
-    list_labels: () => Promise<ExistingLabels>
+    list_labels: () => Promise<ExistingLabels>,
+    get_existing_relationships_for_source: (source_id) => Promise<Edge[]>,
+    get_existing_concepts_for_source: (source_id) => Promise<Concept[]>
   ) {
     this.concept_canonizer = concept_canonizer
     this.graph_writer = graph_writer
     this.list_labels = list_labels
+    this.get_existing_relationships_for_source = get_existing_relationships_for_source
+    this.get_existing_concepts_for_source = get_existing_concepts_for_source
   }
 
   concept_canonizer_tool = (): StructuredTool => new DynamicStructuredTool({
@@ -100,6 +106,8 @@ export class KnowledgeGraphTools {
 export class KnowledgeExtractionNerd extends GraphNerd {
   get_existing_labels: () => Promise<ExistingLabels>
   write_graph: (data: GraphData) => Promise<string>
+  get_existing_relationships_for_source: (source_id) => Promise<Edge[]>
+  get_existing_concepts_for_source: (source_id) => Promise<Concept[]>
   guidance: GraphGuidance
 
   constructor(knowledge_graph_tools: KnowledgeGraphTools, graph_guidance: GraphGuidance, nerd_config: BaseNerdOptions = default_nerd_config) {
@@ -107,11 +115,16 @@ export class KnowledgeExtractionNerd extends GraphNerd {
     super(nerd_config)
     this.get_existing_labels = knowledge_graph_tools.list_labels
     this.write_graph = knowledge_graph_tools.graph_writer
+    this.get_existing_relationships_for_source = knowledge_graph_tools.get_existing_relationships_for_source
+    this.get_existing_concepts_for_source = knowledge_graph_tools.get_existing_concepts_for_source
     this.guidance = graph_guidance
   }
 
   public override async stringify_input(input: KnowledgeGraphInput, runtime_instructions: string): Promise<{ input: string, runtime_instructions: string }> {
-    const updated_runtime_instructions = runtime_instructions + "\n\n" + await this.build_runtime_instructions()
+    const existing_concepts = await this.inject_already_extracted_concepts(input.source_id)
+    const existing_relationships = await this.inject_already_extracted_relationships(input.source_id)
+    const guidance = await this.inject_guidance()
+    const updated_runtime_instructions = runtime_instructions + "\n\n" + existing_concepts + existing_relationships + guidance
     return super.stringify_input(input, updated_runtime_instructions)
   }
 
@@ -121,22 +134,59 @@ export class KnowledgeExtractionNerd extends GraphNerd {
     return typedOutput;
   }
 
-  public async build_runtime_instructions(): Promise<string> {
+  public async inject_already_extracted_concepts(source_id: string): Promise<string> {
+    const existing_concepts = await this.get_existing_concepts_for_source(source_id)
+    if (existing_concepts.length === 0) return ""
+    return `### Existing Concepts
+The following concepts have already been extracted from this source. You may reuse these concepts in your extraction process when identifying new relationships, but there is no need to re-extract them.
+${existing_concepts.map((concept) => {
+      return `* ${concept.name} (${concept.label})`
+    }).join("\n")
+      }
+
+`
+  }
+
+  public async inject_already_extracted_relationships(source_id: string): Promise<string> {
+    const existing_relationships = await this.get_existing_relationships_for_source(source_id)
+    if (existing_relationships.length === 0) return ""
+    return `### Existing Relationships
+The following relationships have already been extracted from this source. 
+** IMPORTANT ** DO NOT extract relationships that replicate or even parallel these existing relationships. 
+You should seek to identify new relationships that are not already present in the graph:
+${existing_relationships.map((edge) => {
+      return `* ${edge.from} -> ${edge.label} -> ${edge.to}`
+    }).join("\n")
+      }
+
+`
+  }
+
+  public async inject_guidance(): Promise<string> {
     const existing_labels = await this.get_existing_labels()
 
-    return `The canonical data in the graph includes the following vertex and edge labels. 
-    
-    When extracting concepts and relationships, you should seek to reuse these labels where possible to ensure consistency and reduce the number of unique labels in the graph.
-    You *MAY* use additional labels if the existing labels fail to adequately capture the complexity of the document's data.
-    
-    Canonical labels are here to guide your selection and extraction process. 
-    You *SHOULD* seek to identify concepts that satisfy the existing labels where possible.
-    
-    Canonical Vertex Labels:
-    ${this.guidance.vertex_labels.concat(existing_labels.vertex_labels.join(", "))}
 
-    Canonical Edge Labels:
-    ${this.guidance.edge_labels.concat(existing_labels.edge_labels.join(", "))}
-    `
+    return `### Graph Guidance
+The canonical data in the graph includes the following vertex and edge labels. 
+    
+When extracting concepts and relationships, you should seek to reuse these labels where possible to ensure consistency and reduce the number of unique labels in the graph.
+      You * MAY * use additional labels if the existing labels fail to adequately capture the complexity of the document's data.
+
+Canonical labels are here to guide your selection and extraction process.
+      You * SHOULD * seek to identify concepts that satisfy the existing labels where possible.
+
+Canonical Vertex Labels:
+${this.guidance.vertex_labels.join(", ")}
+
+    Additionally, the following additional vertex labels have been used in this domain:
+${existing_labels.vertex_labels.filter((label) => !this.guidance.vertex_labels.includes(label)).filter(label => label !== "Document").join(", ")}
+
+Canonical Edge Labels:
+${this.guidance.edge_labels.join(", ")}
+
+    Additionally, the following additional edge labels have been used in this domain:
+${existing_labels.edge_labels.filter((label) => !this.guidance.edge_labels.includes(label)).filter(label => label !== "REFERENCES").join(", ")}
+
+`
   }
 }

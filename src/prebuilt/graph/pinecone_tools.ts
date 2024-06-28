@@ -1,9 +1,9 @@
-import { CanonicalConceptMapping, ConceptToolInput, ExistingLabels, KnowledgeGraphTools } from "./knowledge_extraction_nerd.js";
+import { CanonicalConceptMapping, Concept, ConceptToolInput, ExistingLabels, KnowledgeGraphTools } from "./knowledge_extraction_nerd.js";
 import { OpenAIEmbeddings } from "@langchain/openai";
 import { Index, Pinecone, PineconeRecord, QueryResponse, RecordMetadata } from "@pinecone-database/pinecone"
 
 import neo4j from 'neo4j-driver'
-import { GraphData } from "./index.js";
+import { Edge, GraphData } from "./index.js";
 
 const graph_uri = process.env.NEO4J_URI
 const graph_user = process.env.NEO4J_USERNAME
@@ -198,7 +198,48 @@ RETURN source.name`;
 
     }
 
-    super(mapConceptToCanon, writeGraphData, list_labels)
+    const get_existing_relationships_for_source = async (source_id: string): Promise<Edge[]> => {
+      const query = `MATCH (n)-[r { source: "${source_id}" }]->(m) RETURN n.name as from, labels(n) as from_label, type(r) as relationship, m.name as to, labels(m) as to_label`
+      const session = driver.session()
+      try {
+        const result = await session.run(query)
+        await session.close()
+        return result.records.map((record) => {
+          return {
+            from: record.get('from') + ":" + record.get('from_label'),
+            label: record.get('relationship'),
+            to: record.get('to') + ":" + record.get('to_label')
+          }
+        })
+      } catch (e) {
+        console.error("Error getting existing relationships for source in Neo4J")
+        console.dir(e)
+        throw e
+      }
+
+    }
+
+    const get_existing_concepts_for_source = async (source_id: string): Promise<Concept[]> => {
+      const query = `MATCH (n)<-[:REFERENCES]-(m:Document {name: "${source_id}"}) RETURN n.name as name, labels(n) as label`
+      const session = driver.session()
+      try {
+        const result = await session.run(query)
+        await session.close()
+        return result.records.map((record) => {
+          return {
+            name: record.get('name'),
+            label: record.get('label').filter((label) => label !== "Document")[0]
+          }
+        })
+      } catch (e) {
+        console.error("Error getting existing concepts for source in Neo4J")
+        console.dir(e)
+        throw e
+      }
+
+    }
+
+    super(mapConceptToCanon, writeGraphData, list_labels, get_existing_relationships_for_source, get_existing_concepts_for_source)
     this.concept_index = pinecone.index("concepts")
   }
 
