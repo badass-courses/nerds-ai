@@ -3,10 +3,11 @@ import { ModelCost } from "../index.js"
 import { AnthropicInput, ChatAnthropic } from "@langchain/anthropic"
 import { BaseModel } from "../base_model.js"
 
+export type CLAUDE_35_MODEL = "claude-3-5-sonnet-20240620"
 export type CLAUDE_3_MODEL = "claude-3-opus-20240229" | "claude-3-sonnet-20240229" | "claude-3-haiku-20240307"
 export type CLAUDE_2_MODEL = "claude-2.1" | "claude-2.0"
 export type CLAUDE_1_MODEL = "claude-instant-1.2"
-export type CLAUDE_MODEL = CLAUDE_3_MODEL | CLAUDE_2_MODEL | CLAUDE_1_MODEL
+export type CLAUDE_MODEL = CLAUDE_35_MODEL | CLAUDE_3_MODEL | CLAUDE_2_MODEL | CLAUDE_1_MODEL
 
 export type ANTHROPIC_CHAT_OPTIONS = Partial<AnthropicInput> & BaseLanguageModelParams
 
@@ -46,6 +47,7 @@ export class ClaudeModel extends BaseModel {
     if (opts.model !== name) opts.model = name
     super(name, "ANTHROPIC", new ChatAnthropic(opts))
     switch (name) {
+      case "claude-3-5-sonnet-20240620":
       case "claude-3-opus-20240229":
       case "claude-3-sonnet-20240229":
       case "claude-3-haiku-20240307":
@@ -73,6 +75,7 @@ export class ClaudeModel extends BaseModel {
 }
 
 export const ANTHROPIC_MODELS_BY_NAME: Record<CLAUDE_MODEL, ClaudeModel> = {
+  "claude-3-5-sonnet-20240620": new ClaudeModel("claude-3-5-sonnet-20240620"),
   "claude-3-opus-20240229": new ClaudeModel("claude-3-opus-20240229"),
   "claude-3-sonnet-20240229": new ClaudeModel("claude-3-sonnet-20240229"),
   "claude-3-haiku-20240307": new ClaudeModel("claude-3-haiku-20240307"),

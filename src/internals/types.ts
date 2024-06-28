@@ -16,7 +16,7 @@ export type BaseNerdOptions = {
   input_preprocessors?: NerdInputPreprocessor[]
 }
 
-export type BaseNerd<T extends NerdOutput> = {
+export type BaseNerd<I extends NerdInput, O extends NerdOutput> = {
   name: string
   purpose: string
   do_list: string[]
@@ -25,18 +25,22 @@ export type BaseNerd<T extends NerdOutput> = {
   additional_notes?: string
   as_tool_description: string
   tools?: StructuredToolInterface[],
-  parser: NerdOutputParser<T>,
-  input_preprocessors?: NerdInputPreprocessor[]
+  parser: NerdOutputParser<O>,
+  input_preprocessors?: NerdInputPreprocessor[],
+  stringify_input: (input: I, runtime_instructions: string) => Promise<{ input: string, runtime_instructions: string }>,
+  postprocess_output: (raw_output: string) => Promise<O>
 }
 
-export type BindableNerd<T extends NerdOutput> = BaseNerd<T> & {
-  bindToModel: (model: NerdModel | NerdModelName) => Promise<BoundNerd<T>>
+export type BindableNerd<I extends NerdInput, O extends NerdOutput> = BaseNerd<I, O> & {
+  bindToModel: (model: NerdModel | NerdModelName) => Promise<BoundNerd<I, O>>
 }
 
-export type BoundNerd<T extends NerdOutput> = BaseNerd<T> & {
+export type NerdInput = (Record<string, unknown> | string)
+
+export type BoundNerd<I extends NerdInput, O extends NerdOutput> = BaseNerd<I, O> & {
   prompt: ChatPromptTemplate,
   model: NerdModel,
-  invoke: (input: string, runtime_instructions: string) => Promise<T>,
+  invoke: (input: I, runtime_instructions: string) => Promise<O>,
   invoke_raw: (input: string, runtime_instructions: string) => Promise<string>,
   tool: StructuredToolInterface,
 }

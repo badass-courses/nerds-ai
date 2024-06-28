@@ -2,7 +2,7 @@ import { ChatPromptTemplate, SystemMessagePromptTemplate, HumanMessagePromptTemp
 import { NerdOutput } from "../parsers/index.js";
 import { BaseNerd } from "../types.js";
 
-export const constructPromptTemplate = <T extends NerdOutput>(nerd: BaseNerd<T>, use_scratchpad: boolean = false, agent_instructions: string = ""): ChatPromptTemplate => {
+export const constructPromptTemplate = <T extends NerdOutput>(nerd: BaseNerd<any, T>, use_scratchpad: boolean = false, agent_instructions: string = ""): ChatPromptTemplate => {
   const specify_identity = (name: string, purpose: string): string => `You are ${name}, a NERD (which is a type of automated LLM-driven assistant).
 
 Your purpose: ${purpose}

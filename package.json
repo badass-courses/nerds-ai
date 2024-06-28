@@ -1,6 +1,6 @@
 {
   "name": "nerds-ai",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "A toolkit for defining LLM-agnostic tool-using tools (nerds) for specailized tasks",
   "type": "module",
   "author": "Mykola Bilokonsky <mbilokonsky@users.noreply.github.com>",
@@ -45,7 +45,8 @@
     "demo:personality": "node scripts/simple/personality_nerd.mjs",
     "demo:typo": "node scripts/simple/typo_nerd.mjs",
     "demo:concepts": "node scripts/simple/concept_extraction_nerd.mjs",
-    "demo:wiki": "node scripts/simple/wikipedia_research_nerd.mjs"
+    "demo:wiki": "node scripts/simple/wikipedia_research_nerd.mjs",
+    "demo:kg": "node build/scripts/typed/kg.js"
   },
   "dependencies": {
     "@langchain/anthropic": "^0.1.16",
@@ -56,6 +57,7 @@
     "@pinecone-database/pinecone": "^2.2.0",
     "dotenv": "^16.4.5",
     "langchain": "^0.1.36",
+    "neo4j-driver": "^5.21.0",
     "tslib": "~2.6",
     "zod": "^3.23.4"
   },

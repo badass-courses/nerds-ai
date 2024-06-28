@@ -19,7 +19,7 @@ export type Findings = NerdOutput & {
 
 export const findings_parser: JsonNerdOutputParser<Findings> = new JsonNerdOutputParser<Findings>(schema)
 
-export class FindingsNerd extends Nerd<Findings> {
+export class FindingsNerd extends Nerd<string, Findings> {
   constructor(nerd_opts: BaseNerdOptions) {
     super(nerd_opts, findings_parser)
   }

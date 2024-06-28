@@ -12,7 +12,7 @@ type ConceptNerdConfig = {
   domain: string
 }
 
-type ConceptNerdBuilder = (pineconeConfig: PineconeConfig, nerdConfig: ConceptNerdConfig) => BindableNerd<Findings>
+type ConceptNerdBuilder = (pineconeConfig: PineconeConfig, nerdConfig: ConceptNerdConfig) => BindableNerd<string, Findings>
 
 export const buildPineconeBackedConceptNerd: ConceptNerdBuilder = (pineconeConfig: PineconeConfig, nerdConfig: ConceptNerdConfig) => {
 

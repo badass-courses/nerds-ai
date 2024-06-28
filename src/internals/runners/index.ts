@@ -7,7 +7,7 @@ import { BaseLanguageModelInterface } from "langchain/base_language"
 import { StructuredToolInterface } from "@langchain/core/tools"
 import { ChatPromptTemplate } from "langchain/prompts"
 
-export const createRunner = async (nerd: BoundNerd<NerdOutput>, llm: BaseChatModel | BaseLanguageModelInterface): Promise<Runnable> => {
+export const createRunner = async (nerd: BoundNerd<any, NerdOutput>, llm: BaseChatModel | BaseLanguageModelInterface): Promise<Runnable> => {
   if (!nerd.tools || nerd.tools.length === 0) {
     return nerd.prompt.pipe(llm)
   }
